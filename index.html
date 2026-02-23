@@ -68,6 +68,26 @@
         .loading-text { font-size:16px; color:#888; margin-top:16px; }
         .error-section { background:#fff5f5; border:2px solid #feb2b2; color:#c53030; padding:40px; border-radius:24px; text-align:center; display:none; }
 
+        /* 차트 섹션 */
+        .chart-section { display:none; margin-bottom:32px; }
+        .chart-section.show { display:block; }
+        .chart-card { background:var(--card); border-radius:24px; padding:28px 32px; border:1px solid rgba(0,0,0,0.04); }
+        .chart-title { font-size:16px; font-weight:700; margin-bottom:6px; letter-spacing:-0.03em; }
+        .chart-subtitle { font-size:13px; color:#999; margin-bottom:20px; }
+        .chart-legend { display:flex; gap:16px; margin-bottom:18px; }
+        .legend-item { display:flex; align-items:center; gap:5px; font-size:12px; font-weight:600; color:#888; }
+        .legend-dot { width:8px; height:8px; border-radius:50%; }
+        .legend-59 { background:#8CBBCF; }
+        .legend-84 { background:#CBAB8F; }
+        .chart-row { display:flex; align-items:center; gap:10px; margin-bottom:6px; height:28px; }
+        .chart-row:last-child { margin-bottom:0; }
+        .chart-label { width:140px; min-width:140px; font-size:12px; font-weight:600; color:var(--navy); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:right; }
+        .chart-bars { flex:1; display:flex; flex-direction:column; gap:2px; justify-content:center; }
+        .chart-bar { height:12px; border-radius:3px; transition:width 0.5s ease; min-width:2px; }
+        .chart-bar-59 { background:#8CBBCF; }
+        .chart-bar-84 { background:#CBAB8F; }
+        .chart-val { width:90px; min-width:90px; font-size:11px; font-weight:600; color:#999; font-variant-numeric:tabular-nums; line-height:1.5; }
+
         @media (max-width:768px) {
             .top-stats { grid-template-columns:repeat(2,1fr); }
             .filter-bar { flex-direction:column; }
@@ -105,6 +125,17 @@
                 <div class="filter-item"><label>세부지역</label><select id="filterMinor" onchange="applyFilters()"><option value="">전체</option></select></div>
                 <div class="filter-item"><label>단지명 검색</label><input type="text" id="filterName" placeholder="단지명 입력" oninput="applyFilters()"></div>
                 <div class="filter-item"><label>정렬</label><select id="sortBy" onchange="applyFilters()"><option value="name">이름순</option><option value="count-desc">매물 많은순</option><option value="price-asc">최저가 낮은순</option><option value="price-desc">최고가 높은순</option></select></div>
+            </div>
+            <div id="chartSection" class="chart-section">
+                <div class="chart-card">
+                    <div class="chart-title" id="chartTitle">단지별 최저가 비교</div>
+                    <div class="chart-subtitle" id="chartSubtitle">59m² · 84m² 기준</div>
+                    <div class="chart-legend">
+                        <div class="legend-item"><div class="legend-dot legend-59"></div>59m²</div>
+                        <div class="legend-item"><div class="legend-dot legend-84"></div>84m²</div>
+                    </div>
+                    <div id="chartBars"></div>
+                </div>
             </div>
             <div id="aptContainer"></div>
         </div>
@@ -251,6 +282,7 @@
             const allP=filtered.map(d=>d.가격숫자).filter(p=>p>0);
             document.getElementById('statMinPrice').textContent=allP.length?fmtWon(Math.min(...allP)):'-';
             document.getElementById('statMaxPrice').textContent=allP.length?fmtWon(Math.max(...allP)):'-';
+            renderChart(major, filtered);
             render(aptList);
         }
 
@@ -262,6 +294,57 @@
             if(man>0)s+=' '+man.toLocaleString()+'만';
             if(!s)s='0';
             return (n<0?'-':'')+s.trim();
+        }
+
+        function renderChart(major, filtered) {
+            const section = document.getElementById('chartSection');
+            if (!major) { section.classList.remove('show'); return; }
+            section.classList.add('show');
+            document.getElementById('chartTitle').textContent = major + ' 단지별 최저가 비교';
+            document.getElementById('chartSubtitle').textContent = '59m² · 84m² 기준 · 낮은 순';
+
+            const aptMap = {};
+            filtered.forEach(d => {
+                const area = parseFloat(d.전용) || 0;
+                if (area < 55 || (area > 65 && area < 80) || area > 90) return;
+                const type = area <= 65 ? '59' : '84';
+                if (!aptMap[d.단지명]) aptMap[d.단지명] = {};
+                if (!aptMap[d.단지명][type]) aptMap[d.단지명][type] = [];
+                if (d.가격숫자 > 0) aptMap[d.단지명][type].push(d.가격숫자);
+            });
+
+            const chartData = Object.entries(aptMap).map(([name, types]) => ({
+                name,
+                min59: types['59'] ? Math.min(...types['59']) : 0,
+                min84: types['84'] ? Math.min(...types['84']) : 0,
+            })).filter(d => d.min59 > 0 || d.min84 > 0)
+            .sort((a, b) => (a.min59 || a.min84) - (b.min59 || b.min84));
+
+            if (!chartData.length) { section.classList.remove('show'); return; }
+
+            const maxVal = Math.max(...chartData.map(d => Math.max(d.min59, d.min84)));
+            const bars = document.getElementById('chartBars');
+            bars.innerHTML = '';
+
+            chartData.forEach(d => {
+                const pct59 = d.min59 > 0 ? Math.max((d.min59 / maxVal) * 100, 3) : 0;
+                const pct84 = d.min84 > 0 ? Math.max((d.min84 / maxVal) * 100, 3) : 0;
+
+                let barsHtml = '';
+                if (pct59) barsHtml += `<div class="chart-bar chart-bar-59" style="width:${pct59}%"></div>`;
+                if (pct84) barsHtml += `<div class="chart-bar chart-bar-84" style="width:${pct84}%"></div>`;
+
+                let valHtml = '';
+                if (d.min59) valHtml += '<span style="color:#8CBBCF">' + fmtWon(d.min59) + '</span>';
+                if (d.min59 && d.min84) valHtml += '<br>';
+                if (d.min84) valHtml += '<span style="color:#CBAB8F">' + fmtWon(d.min84) + '</span>';
+
+                bars.innerHTML += `<div class="chart-row">
+                    <div class="chart-label" title="${d.name}">${d.name}</div>
+                    <div class="chart-bars">${barsHtml}</div>
+                    <div class="chart-val">${valHtml}</div>
+                </div>`;
+            });
         }
 
         function render(aptList) {
@@ -286,7 +369,7 @@
                     </tr>`;
                     panels+=`<tr id="${uid}" class="detail-panel"><td colspan="7" style="padding:0;"><div class="detail-inner"><table>
                         <tr><th>동</th><th>층</th><th>방향</th><th class="r">매매가</th><th class="r">P금액</th><th>비고</th></tr>
-                        ${t.items.map(d=>`<tr>
+                        ${[...t.items].sort((a,b)=>a.가격숫자-b.가격숫자).map(d=>`<tr>
                             <td>${d.동}</td><td>${d.층}</td><td>${d.방향}</td>
                             <td class="r" style="font-weight:600">${d.가격}</td>
                             <td class="r" style="font-weight:600;color:${d.P금액숫자<0?'var(--red)':d.P금액숫자>0?'var(--green)':'#888'}">${d.P텍스트||'-'}</td>
