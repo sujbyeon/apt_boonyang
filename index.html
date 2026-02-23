@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>아파트 분양권 요약 대시보드</title>
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <style>
+        :root { --navy:#022136; --gold:#A78569; --gold-light:#f5efe9; --red:#e74c3c; --green:#27ae60; --blue:#2980b9; --bg:#f5f5f7; --card:#fff; }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:"Pretendard Variable",Pretendard,-apple-system,sans-serif; background:var(--bg); color:var(--navy); padding:48px 20px; display:flex; flex-direction:column; align-items:center; -webkit-font-smoothing:antialiased; letter-spacing:-0.02em; }
+        .container { width:100%; max-width:1200px; }
+        header { text-align:center; margin-bottom:48px; }
+        h1 { font-size:38px; font-weight:800; letter-spacing:-0.05em; margin-bottom:8px; }
+        .subtitle { font-size:17px; color:var(--gold); font-weight:600; }
+
+        .top-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:32px; }
+        .top-stat { background:var(--card); border-radius:20px; padding:28px 20px; text-align:center; border:1px solid rgba(0,0,0,0.04); }
+        .top-stat-icon { font-size:28px; margin-bottom:10px; }
+        .top-stat-label { font-size:13px; color:#888; font-weight:500; margin-bottom:6px; }
+        .top-stat-value { font-size:26px; font-weight:800; letter-spacing:-0.03em; }
+
+        .filter-bar { background:var(--card); border-radius:20px; padding:24px 28px; margin-bottom:32px; display:flex; gap:16px; align-items:end; border:1px solid rgba(0,0,0,0.04); flex-wrap:wrap; }
+        .filter-item { flex:1; min-width:160px; }
+        .filter-item label { display:block; font-size:12px; font-weight:600; color:#888; margin-bottom:6px; }
+        .filter-item select,.filter-item input { width:100%; padding:10px 14px; border:1px solid #e0e0e0; border-radius:12px; font-size:14px; font-family:inherit; background:#fff; }
+        .filter-item select:focus,.filter-item input:focus { outline:none; border-color:var(--gold); }
+
+        .apt-card { background:var(--card); border-radius:24px; margin-bottom:24px; border:1px solid rgba(0,0,0,0.04); overflow:hidden; }
+        .apt-card-header { padding:28px 32px 20px; display:flex; justify-content:space-between; align-items:center; }
+        .apt-name { font-size:22px; font-weight:800; letter-spacing:-0.03em; }
+        .apt-location { font-size:14px; color:#888; font-weight:500; margin-top:4px; }
+        .apt-badges { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+        .apt-badge { padding:8px 16px; border-radius:12px; font-size:14px; font-weight:700; }
+        .badge-count { background:var(--gold-light); color:var(--gold); }
+        .badge-range { background:#eef6ff; color:var(--blue); }
+
+        .type-table-wrap { padding:0 32px 28px; }
+        .type-table { width:100%; border-collapse:separate; border-spacing:0; }
+        .type-table thead th { font-size:12px; font-weight:700; color:#888; padding:12px 14px; text-align:left; border-bottom:2px solid #f0f0f0; white-space:nowrap; }
+        .type-table thead th.r { text-align:right; }
+        .type-table tbody td { padding:14px; font-size:14px; font-weight:500; border-bottom:1px solid #f5f5f5; vertical-align:middle; }
+        .type-table tbody tr:last-child td { border-bottom:none; }
+        .type-table tbody tr:hover { background:#fafbfc; }
+        .type-name { font-weight:700; color:var(--navy); }
+        .type-area { font-size:13px; color:#999; font-weight:500; }
+        .td-r { text-align:right; font-variant-numeric:tabular-nums; }
+        .price-min { color:var(--green); font-weight:700; }
+        .price-max { color:var(--red); font-weight:700; }
+        .count-badge { display:inline-block; background:var(--gold-light); color:var(--gold); padding:3px 10px; border-radius:8px; font-weight:700; font-size:13px; }
+        .p-neg { color:var(--red); font-weight:700; }
+        .p-pos { color:var(--green); font-weight:700; }
+
+        .detail-btn { background:none; border:1px solid #e0e0e0; border-radius:8px; padding:4px 10px; font-size:11px; font-family:inherit; cursor:pointer; color:#888; font-weight:600; transition:all 0.2s; }
+        .detail-btn:hover { border-color:var(--gold); color:var(--gold); }
+        .detail-panel { display:none; }
+        .detail-panel.open { display:table-row; }
+        .detail-inner { padding:12px 16px; background:#fafbfc; }
+        .detail-inner table { width:100%; border-collapse:collapse; }
+        .detail-inner th { font-size:11px; color:#999; font-weight:700; padding:6px 8px; text-align:left; }
+        .detail-inner th.r { text-align:right; }
+        .detail-inner td { font-size:13px; padding:8px; border-top:1px solid #eee; }
+        .detail-inner td.r { text-align:right; }
+
+        .loading-section { text-align:center; padding:100px 20px; background:var(--card); border-radius:24px; }
+        .loading-icon { font-size:48px; animation:spin 2s linear infinite; }
+        @keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+        .loading-text { font-size:16px; color:#888; margin-top:16px; }
+        .error-section { background:#fff5f5; border:2px solid #feb2b2; color:#c53030; padding:40px; border-radius:24px; text-align:center; display:none; }
+
+        @media (max-width:768px) {
+            .top-stats { grid-template-columns:repeat(2,1fr); }
+            .filter-bar { flex-direction:column; }
+            .apt-card-header { flex-direction:column; align-items:flex-start; gap:12px; }
+            .type-table-wrap { padding:0 16px 20px; overflow-x:auto; }
+            h1 { font-size:28px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏢 분양권 매물 요약</h1>
+            <div class="subtitle">아파트별 · 평형별 가격 요약 대시보드</div>
+        </header>
+
+        <div id="loadingSection" class="loading-section">
+            <div class="loading-icon">⏳</div>
+            <div class="loading-text">데이터를 불러오는 중입니다...</div>
+        </div>
+        <div id="errorSection" class="error-section">
+            <div style="font-size:48px;margin-bottom:16px;">❌</div>
+            <div id="errorMessage" style="font-size:15px;line-height:1.8;"></div>
+        </div>
+
+        <div id="mainContent" style="display:none;">
+            <div class="top-stats">
+                <div class="top-stat"><div class="top-stat-icon">🏠</div><div class="top-stat-label">총 단지 수</div><div class="top-stat-value" id="statAptCount">0</div></div>
+                <div class="top-stat"><div class="top-stat-icon">📋</div><div class="top-stat-label">총 매물 수</div><div class="top-stat-value" id="statTotalCount">0</div></div>
+                <div class="top-stat"><div class="top-stat-icon">💰</div><div class="top-stat-label">최저가</div><div class="top-stat-value" id="statMinPrice">-</div></div>
+                <div class="top-stat"><div class="top-stat-icon">📈</div><div class="top-stat-label">최고가</div><div class="top-stat-value" id="statMaxPrice">-</div></div>
+            </div>
+            <div class="filter-bar">
+                <div class="filter-item"><label>광역시도</label><select id="filterMajor" onchange="onMajorChange()"><option value="">전체</option></select></div>
+                <div class="filter-item"><label>세부지역</label><select id="filterMinor" onchange="applyFilters()"><option value="">전체</option></select></div>
+                <div class="filter-item"><label>단지명 검색</label><input type="text" id="filterName" placeholder="단지명 입력" oninput="applyFilters()"></div>
+                <div class="filter-item"><label>정렬</label><select id="sortBy" onchange="applyFilters()"><option value="name">이름순</option><option value="count-desc">매물 많은순</option><option value="price-asc">최저가 낮은순</option><option value="price-desc">최고가 높은순</option></select></div>
+            </div>
+            <div id="aptContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        let allData = [];
+        const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTNbiO170sxkjo_rgOvvis5eTZP0VYfm1aYetd792BcWwXs-b1BsRtX9DQha6LlZkfRIIE_4IIeplIM/pub?gid=0&single=true&output=csv';
+        window.onload = loadData;
+
+        async function loadData() {
+            const methods = [
+                () => fetch(SHEET_CSV_URL).then(r=>{if(!r.ok)throw 0;return r.text()}),
+                () => fetch('https://api.allorigins.win/raw?url='+encodeURIComponent(SHEET_CSV_URL)).then(r=>{if(!r.ok)throw 0;return r.text()}),
+                () => fetch('https://corsproxy.io/?'+encodeURIComponent(SHEET_CSV_URL)).then(r=>{if(!r.ok)throw 0;return r.text()}),
+            ];
+            let text=null;
+            for(const m of methods){try{text=await Promise.race([m(),new Promise((_,r)=>setTimeout(()=>r('t'),6000))]);if(text&&text.length>20)break;text=null;}catch(e){text=null;}}
+            if(!text){showError('데이터를 불러오지 못했습니다.<br>구글 시트 웹 게시 상태를 확인해주세요.');return;}
+            try{parseCSV(text);buildRegionFilter();applyFilters();document.getElementById('loadingSection').style.display='none';document.getElementById('mainContent').style.display='block';}catch(e){showError('파싱 실패: '+e.message);}
+        }
+
+        function parseCSV(text) {
+            allData = [];
+            const lines = csvParse(text);
+            if (lines.length < 2) return;
+
+            // 헤더 자동 매핑
+            const h = lines[0].map(s => s.trim());
+            const fi = (keywords) => h.findIndex(col => keywords.every(k => col.includes(k)));
+            const I = {
+                지역: h.findIndex((c,i) => c.includes('지역') && !c.includes('2')),
+                지역2: fi(['지역2']) !== -1 ? fi(['지역2']) : fi(['지역','2']),
+                단지명: fi(['단지명']),
+                동: h.findIndex(c => c === '동'),
+                가격: h.findIndex((c,i) => c === '가격'),
+                가격숫자: fi(['가격','숫자']),
+                공급: fi(['공급']),
+                전용: fi(['전용']),
+                층: h.findIndex(c => c === '층'),
+                방향: fi(['방향']),
+                P금액숫자: fi(['P금액','숫자']),
+                P텍스트: fi(['P','텍스트']),
+                상세설명: fi(['상세']) !== -1 ? fi(['상세']) : fi(['설명']),
+                제공업체: fi(['제공']),
+                중개사: fi(['중개']),
+                확인일: fi(['확인']),
+            };
+
+            for (let i = 1; i < lines.length; i++) {
+                const c = lines[i];
+                const name = gc(c, I.단지명);
+                if (!name) continue;
+                allData.push({
+                    지역: gc(c, I.지역),
+                    지역2: gc(c, I.지역2),
+                    단지명: name,
+                    동: gc(c, I.동),
+                    가격: gc(c, I.가격),
+                    가격숫자: numParse(gc(c, I.가격숫자)),
+                    공급: gc(c, I.공급),
+                    전용: gc(c, I.전용),
+                    층: gc(c, I.층),
+                    방향: gc(c, I.방향),
+                    P금액숫자: numParse(gc(c, I.P금액숫자)),
+                    P텍스트: gc(c, I.P텍스트),
+                    상세설명: gc(c, I.상세설명),
+                    제공업체: gc(c, I.제공업체),
+                    중개사: gc(c, I.중개사),
+                    확인일: gc(c, I.확인일),
+                });
+            }
+        }
+
+        function gc(arr, i) { return (i >= 0 && i < arr.length) ? arr[i].trim() : ''; }
+        function numParse(s) { return parseFloat((s||'').replace(/,/g, '')) || 0; }
+
+        function csvParse(text) {
+            const result = []; let row=[], cell='', inQ=false;
+            for (let i=0; i<text.length; i++) {
+                const ch=text[i], nx=text[i+1];
+                if(inQ){if(ch==='"'&&nx==='"'){cell+='"';i++;}else if(ch==='"')inQ=false;else cell+=ch;}
+                else{if(ch==='"')inQ=true;else if(ch===','){row.push(cell);cell='';}else if(ch==='\n'||(ch==='\r'&&nx==='\n')){row.push(cell);if(row.some(c=>c.trim()))result.push(row);row=[];cell='';if(ch==='\r')i++;}else cell+=ch;}
+            }
+            if(cell||row.length){row.push(cell);if(row.some(c=>c.trim()))result.push(row);}
+            return result;
+        }
+
+        function getMajor(r) {
+            const map = [['서울'],['경기'],['인천'],['부산'],['대구'],['대전'],['광주'],['울산'],['세종'],['충북','충청북'],['충남','충청남'],['전북','전라북'],['전남','전라남'],['경북','경상북'],['경남','경상남'],['강원'],['제주']];
+            for (const m of map) { for (const prefix of m) { if (r.startsWith(prefix)) return m[0]; } }
+            return r;
+        }
+
+        function buildRegionFilter() {
+            const mm = {};
+            allData.forEach(d => { const m = getMajor(d.지역); if(!mm[m])mm[m]=new Set(); mm[m].add(d.지역2); });
+            const sel = document.getElementById('filterMajor');
+            const order = ['서울','경기','인천','부산','대구','대전','광주','울산','세종'];
+            Object.keys(mm).sort((a,b) => { const ai=order.indexOf(a),bi=order.indexOf(b); if(ai!==-1&&bi!==-1)return ai-bi; if(ai!==-1)return -1; if(bi!==-1)return 1; return a.localeCompare(b,'ko'); }).forEach(m => {
+                const o = document.createElement('option'); o.value=m; o.textContent=m+' ('+mm[m].size+'개 구/시)'; sel.appendChild(o);
+            });
+            window._mm = mm;
+        }
+
+        function onMajorChange() {
+            const major = document.getElementById('filterMajor').value;
+            const ms = document.getElementById('filterMinor');
+            ms.innerHTML = '<option value="">전체</option>';
+            if (major && window._mm[major]) {
+                [...window._mm[major]].sort((a,b)=>a.localeCompare(b,'ko')).forEach(m => { const o=document.createElement('option');o.value=m;o.textContent=m;ms.appendChild(o); });
+            }
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const major=document.getElementById('filterMajor').value;
+            const minor=document.getElementById('filterMinor').value;
+            const name=document.getElementById('filterName').value.toLowerCase();
+            const sortBy=document.getElementById('sortBy').value;
+            let filtered=allData.filter(d=>(!major||getMajor(d.지역)===major)&&(!minor||d.지역2===minor)&&(!name||d.단지명.toLowerCase().includes(name)));
+
+            const am={};
+            filtered.forEach(d=>{const k=d.단지명;if(!am[k])am[k]={지역:d.지역,지역2:d.지역2,items:[]};am[k].items.push(d);});
+            let aptList=Object.entries(am).map(([n,data])=>{
+                const tm={};
+                data.items.forEach(d=>{const k=d.전용;if(!tm[k])tm[k]={전용:d.전용,items:[]};tm[k].items.push(d);});
+                const types=Object.values(tm).map(t=>{
+                    const pr=t.items.map(i=>i.가격숫자).filter(p=>p>0);
+                    const pa=t.items.map(i=>i.P금액숫자).filter(p=>p!==0);
+                    return{전용:t.전용,count:t.items.length,minPrice:pr.length?Math.min(...pr):0,maxPrice:pr.length?Math.max(...pr):0,minP:pa.length?Math.min(...pa):0,maxP:pa.length?Math.max(...pa):0,items:t.items};
+                });
+                const ap=data.items.map(i=>i.가격숫자).filter(p=>p>0);
+                return{name:n,지역:data.지역,지역2:data.지역2,totalCount:data.items.length,minPrice:ap.length?Math.min(...ap):0,maxPrice:ap.length?Math.max(...ap):0,types};
+            });
+
+            if(sortBy==='name')aptList.sort((a,b)=>a.name.localeCompare(b.name,'ko'));
+            else if(sortBy==='count-desc')aptList.sort((a,b)=>b.totalCount-a.totalCount);
+            else if(sortBy==='price-asc')aptList.sort((a,b)=>a.minPrice-b.minPrice);
+            else if(sortBy==='price-desc')aptList.sort((a,b)=>b.maxPrice-a.maxPrice);
+
+            document.getElementById('statAptCount').textContent=aptList.length;
+            document.getElementById('statTotalCount').textContent=filtered.length;
+            const allP=filtered.map(d=>d.가격숫자).filter(p=>p>0);
+            document.getElementById('statMinPrice').textContent=allP.length?fmtWon(Math.min(...allP)):'-';
+            document.getElementById('statMaxPrice').textContent=allP.length?fmtWon(Math.max(...allP)):'-';
+            render(aptList);
+        }
+
+        function fmtWon(n) {
+            if(!n) return '-';
+            const abs=Math.abs(n), eok=Math.floor(abs/1e8), man=Math.floor((abs%1e8)/1e4);
+            let s='';
+            if(eok>0)s+=eok+'억';
+            if(man>0)s+=' '+man.toLocaleString()+'만';
+            if(!s)s='0';
+            return (n<0?'-':'')+s.trim();
+        }
+
+        function render(aptList) {
+            const ct=document.getElementById('aptContainer');
+            ct.innerHTML='';
+            if(!aptList.length){ct.innerHTML='<div style="text-align:center;padding:60px;background:var(--card);border-radius:24px;color:#888;">🔍 검색 결과가 없습니다</div>';return;}
+
+            aptList.forEach((apt,idx)=>{
+                const card=document.createElement('div');
+                card.className='apt-card';
+                let rows='', panels='';
+                apt.types.forEach((t,ti)=>{
+                    const uid='d_'+idx+'_'+ti;
+                    rows+=`<tr>
+                        <td><span class="type-name">${t.전용}m²</span></td>
+                        <td class="td-r"><span class="count-badge">${t.count}</span></td>
+                        <td class="td-r price-min">${fmtWon(t.minPrice)}</td>
+                        <td class="td-r price-max">${fmtWon(t.maxPrice)}</td>
+                        <td class="td-r ${t.minP<0?'p-neg':'p-pos'}">${fmtWon(t.minP)}</td>
+                        <td class="td-r ${t.maxP<0?'p-neg':'p-pos'}">${fmtWon(t.maxP)}</td>
+                        <td class="td-r"><button class="detail-btn" onclick="toggleD('${uid}',this)">상세▼</button></td>
+                    </tr>`;
+                    panels+=`<tr id="${uid}" class="detail-panel"><td colspan="7" style="padding:0;"><div class="detail-inner"><table>
+                        <tr><th>동</th><th>층</th><th>방향</th><th class="r">매매가</th><th class="r">P금액</th><th>비고</th></tr>
+                        ${t.items.map(d=>`<tr>
+                            <td>${d.동}</td><td>${d.층}</td><td>${d.방향}</td>
+                            <td class="r" style="font-weight:600">${d.가격}</td>
+                            <td class="r" style="font-weight:600;color:${d.P금액숫자<0?'var(--red)':d.P금액숫자>0?'var(--green)':'#888'}">${d.P텍스트||'-'}</td>
+                            <td style="color:#888;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(d.상세설명||'').replace(/"/g,'&quot;')}">${d.상세설명||'-'}</td>
+                        </tr>`).join('')}
+                    </table></div></td></tr>`;
+                });
+
+                card.innerHTML=`
+                    <div class="apt-card-header">
+                        <div><div class="apt-name">🏢 ${apt.name}</div><div class="apt-location">${apt.지역} ${apt.지역2}</div></div>
+                        <div class="apt-badges">
+                            <span class="apt-badge badge-count">${apt.totalCount}건</span>
+                            <span class="apt-badge badge-range">${fmtWon(apt.minPrice)} ~ ${fmtWon(apt.maxPrice)}</span>
+                        </div>
+                    </div>
+                    <div class="type-table-wrap"><table class="type-table">
+                        <thead><tr><th>전용면적</th><th class="r">매물 수</th><th class="r">최저가</th><th class="r">최고가</th><th class="r">P 최저</th><th class="r">P 최고</th><th></th></tr></thead>
+                        <tbody>${rows}${panels}</tbody>
+                    </table></div>`;
+                ct.appendChild(card);
+            });
+        }
+
+        function toggleD(id,btn){const el=document.getElementById(id);el.classList.toggle('open');btn.textContent=el.classList.contains('open')?'접기▲':'상세▼';}
+        function showError(msg){document.getElementById('loadingSection').style.display='none';document.getElementById('errorSection').style.display='block';document.getElementById('errorMessage').innerHTML=msg;}
+    </script>
+</body>
+</html>
