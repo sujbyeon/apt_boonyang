@@ -89,11 +89,64 @@
         .chart-val { width:90px; min-width:90px; font-size:11px; font-weight:600; color:#999; font-variant-numeric:tabular-nums; line-height:1.5; }
 
         @media (max-width:768px) {
-            .top-stats { grid-template-columns:repeat(2,1fr); }
-            .filter-bar { flex-direction:column; }
-            .apt-card-header { flex-direction:column; align-items:flex-start; gap:12px; }
-            .type-table-wrap { padding:0 16px 20px; overflow-x:auto; }
-            h1 { font-size:28px; }
+            body { padding:24px 12px; }
+            .top-stats { grid-template-columns:repeat(2,1fr); gap:10px; }
+            .top-stat { padding:20px 14px; border-radius:16px; }
+            .top-stat-value { font-size:22px; }
+            .filter-bar { flex-direction:column; padding:16px; gap:10px; border-radius:16px; margin-bottom:20px; }
+            .filter-item { min-width:100%; }
+            h1 { font-size:26px; }
+            .subtitle { font-size:14px; }
+            header { margin-bottom:28px; }
+
+            /* 차트 모바일 */
+            .chart-card { padding:20px 16px; border-radius:16px; }
+            .chart-label { width:80px; min-width:80px; font-size:11px; }
+            .chart-val { width:70px; min-width:70px; font-size:10px; }
+            .chart-row { gap:6px; height:26px; }
+
+            /* 아파트 카드 */
+            .apt-card { border-radius:16px; margin-bottom:16px; }
+            .apt-card-header { padding:20px 16px 14px; flex-direction:column; align-items:flex-start; gap:10px; }
+            .apt-name { font-size:18px; }
+            .apt-badges { gap:6px; }
+            .apt-badge { padding:6px 12px; font-size:12px; border-radius:10px; }
+
+            /* 테이블 → 카드형 전환 */
+            .type-table-wrap { padding:0 16px 20px; overflow-x:visible; }
+            .type-table thead { display:none; }
+            .type-table, .type-table tbody { display:block; width:100%; }
+            .type-table tbody tr.type-row { display:grid; grid-template-columns:1fr 1fr; gap:4px 12px; padding:14px; margin-bottom:8px; background:#f8f9fa; border-radius:12px; border-bottom:none !important; }
+            .type-table tbody tr.type-row:hover { background:#f0f1f3; }
+            .type-table tbody tr.type-row td { padding:0; border-bottom:none; font-size:13px; }
+            .type-table tbody tr.type-row td.td-r { text-align:left; }
+            .type-table tbody tr.type-row td:nth-child(1) { grid-column:1/-1; font-size:15px; font-weight:700; margin-bottom:4px; }
+            .type-table tbody tr.type-row td:nth-child(2)::before { content:'매물 '; font-size:11px; color:#888; }
+            .type-table tbody tr.type-row td:nth-child(3)::before { content:'최저 '; font-size:11px; color:#888; }
+            .type-table tbody tr.type-row td:nth-child(4)::before { content:'최고 '; font-size:11px; color:#888; }
+            .type-table tbody tr.type-row td:nth-child(5)::before { content:'P최저 '; font-size:11px; color:#888; }
+            .type-table tbody tr.type-row td:nth-child(6)::before { content:'P최고 '; font-size:11px; color:#888; }
+            .type-table tbody tr.type-row td:nth-child(7) { grid-column:1/-1; margin-top:4px; }
+            .detail-btn { width:100%; padding:8px; font-size:12px; }
+
+            /* 상세 패널 모바일 */
+            .type-table tbody tr.detail-panel { display:none; }
+            .type-table tbody tr.detail-panel.open { display:block; margin-bottom:8px; }
+            .detail-panel td { padding:0 !important; }
+            .detail-inner { padding:8px; border-radius:12px; }
+            .detail-inner table { width:100%; }
+            .detail-inner thead { display:none; }
+            .detail-inner table tr { display:block; padding:10px 12px; margin-bottom:6px; background:#fff; border-radius:10px; border:1px solid #eee; }
+            .detail-inner table tr:first-child { display:none; }
+            .detail-inner table td { display:inline; padding:0 !important; font-size:13px; border:none !important; }
+            .detail-inner table td:nth-child(1)::before { content:''; }
+            .detail-inner table td:nth-child(1) { font-weight:700; }
+            .detail-inner table td:nth-child(1)::after { content:' · '; color:#ccc; }
+            .detail-inner table td:nth-child(2)::after { content:' · '; color:#ccc; }
+            .detail-inner table td:nth-child(3)::after { content:'\A'; white-space:pre; }
+            .detail-inner table td:nth-child(4) { font-weight:700; }
+            .detail-inner table td:nth-child(4)::after { content:'  '; }
+            .detail-inner table td:nth-child(6) { display:block; margin-top:4px; font-size:12px; color:#999 !important; white-space:normal; max-width:100%; overflow:visible; }
         }
     </style>
 </head>
@@ -147,13 +200,15 @@
         window.onload = loadData;
 
         async function loadData() {
-            const methods = [
-                () => fetch(SHEET_CSV_URL).then(r=>{if(!r.ok)throw 0;return r.text()}),
-                () => fetch('https://api.allorigins.win/raw?url='+encodeURIComponent(SHEET_CSV_URL)).then(r=>{if(!r.ok)throw 0;return r.text()}),
-                () => fetch('https://corsproxy.io/?'+encodeURIComponent(SHEET_CSV_URL)).then(r=>{if(!r.ok)throw 0;return r.text()}),
+            const urls = [
+                SHEET_CSV_URL,
+                'https://api.allorigins.win/raw?url='+encodeURIComponent(SHEET_CSV_URL),
+                'https://corsproxy.io/?'+encodeURIComponent(SHEET_CSV_URL),
             ];
+            const fetchWith = (url) => fetch(url).then(r=>{if(!r.ok)throw 0;return r.text()}).then(t=>{if(t.length<20)throw 0;return t;});
+            const timeout = new Promise((_,r)=>setTimeout(()=>r('timeout'),4000));
             let text=null;
-            for(const m of methods){try{text=await Promise.race([m(),new Promise((_,r)=>setTimeout(()=>r('t'),6000))]);if(text&&text.length>20)break;text=null;}catch(e){text=null;}}
+            try { text = await Promise.race([...urls.map(u=>fetchWith(u)), timeout]); } catch(e) { text=null; }
             if(!text){showError('데이터를 불러오지 못했습니다.<br>구글 시트 웹 게시 상태를 확인해주세요.');return;}
             try{parseCSV(text);buildRegionFilter();applyFilters();document.getElementById('loadingSection').style.display='none';document.getElementById('mainContent').style.display='block';}catch(e){showError('파싱 실패: '+e.message);}
         }
@@ -355,10 +410,10 @@
             aptList.forEach((apt,idx)=>{
                 const card=document.createElement('div');
                 card.className='apt-card';
-                let rows='', panels='';
+                let rows='';
                 apt.types.forEach((t,ti)=>{
                     const uid='d_'+idx+'_'+ti;
-                    rows+=`<tr>
+                    rows+=`<tr class="type-row">
                         <td><span class="type-name">${t.전용}m²</span></td>
                         <td class="td-r"><span class="count-badge">${t.count}</span></td>
                         <td class="td-r price-min">${fmtWon(t.minPrice)}</td>
@@ -367,7 +422,7 @@
                         <td class="td-r ${t.maxP<0?'p-neg':'p-pos'}">${fmtWon(t.maxP)}</td>
                         <td class="td-r"><button class="detail-btn" onclick="toggleD('${uid}',this)">상세▼</button></td>
                     </tr>`;
-                    panels+=`<tr id="${uid}" class="detail-panel"><td colspan="7" style="padding:0;"><div class="detail-inner"><table>
+                    rows+=`<tr id="${uid}" class="detail-panel"><td colspan="7" style="padding:0;"><div class="detail-inner"><table>
                         <tr><th>동</th><th>층</th><th>방향</th><th class="r">매매가</th><th class="r">P금액</th><th>비고</th></tr>
                         ${[...t.items].sort((a,b)=>a.가격숫자-b.가격숫자).map(d=>`<tr>
                             <td>${d.동}</td><td>${d.층}</td><td>${d.방향}</td>
@@ -388,7 +443,7 @@
                     </div>
                     <div class="type-table-wrap"><table class="type-table">
                         <thead><tr><th>전용면적</th><th class="r">매물 수</th><th class="r">최저가</th><th class="r">최고가</th><th class="r">P 최저</th><th class="r">P 최고</th><th></th></tr></thead>
-                        <tbody>${rows}${panels}</tbody>
+                        <tbody>${rows}</tbody>
                     </table></div>`;
                 ct.appendChild(card);
             });
