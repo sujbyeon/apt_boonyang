@@ -89,7 +89,9 @@
         .chart-val { width:90px; min-width:90px; font-size:11px; font-weight:600; color:#999; font-variant-numeric:tabular-nums; line-height:1.5; }
 
         @media (max-width:768px) {
+            html, body { width:100%; overflow-x:hidden; }
             body { padding:24px 12px; }
+            .container { max-width:100%; overflow-x:hidden; }
             .top-stats { grid-template-columns:repeat(2,1fr); gap:10px; }
             .top-stat { padding:20px 14px; border-radius:16px; }
             .top-stat-value { font-size:22px; }
@@ -99,11 +101,15 @@
             .subtitle { font-size:14px; }
             header { margin-bottom:28px; }
 
+            /* 광고 배너 모바일 */
+            .ad-banner { padding:14px 12px !important; gap:8px !important; flex-direction:column !important; }
+            .ad-banner a { width:100%; padding:10px 16px !important; }
+
             /* 차트 모바일 */
-            .chart-card { padding:20px 16px; border-radius:16px; }
-            .chart-label { width:80px; min-width:80px; font-size:11px; }
-            .chart-val { width:70px; min-width:70px; font-size:10px; }
-            .chart-row { gap:6px; height:26px; }
+            .chart-card { padding:20px 12px; border-radius:16px; }
+            .chart-label { width:70px; min-width:70px; font-size:10px; }
+            .chart-val { width:65px; min-width:65px; font-size:9px; }
+            .chart-row { gap:4px; height:26px; }
 
             /* 아파트 카드 */
             .apt-card { border-radius:16px; margin-bottom:16px; }
@@ -113,7 +119,7 @@
             .apt-badge { padding:6px 12px; font-size:12px; border-radius:10px; }
 
             /* 테이블 → 카드형 전환 */
-            .type-table-wrap { padding:0 16px 20px; overflow-x:visible; }
+            .type-table-wrap { padding:0 12px 20px; overflow-x:hidden; }
             .type-table thead { display:none; }
             .type-table, .type-table tbody { display:block; width:100%; }
             .type-table tbody tr.type-row { display:grid; grid-template-columns:1fr 1fr; gap:4px 12px; padding:14px; margin-bottom:8px; background:#f8f9fa; border-radius:12px; border-bottom:none !important; }
@@ -132,7 +138,7 @@
             .type-table tbody tr.detail-panel { display:none; }
             .type-table tbody tr.detail-panel.open { display:block; margin-bottom:8px; }
             .detail-panel td { padding:0 !important; }
-            .detail-inner { padding:8px; border-radius:12px; }
+            .detail-inner { padding:8px; border-radius:12px; overflow-x:hidden; }
             .detail-inner table { width:100%; }
             .detail-inner thead { display:none; }
             .detail-inner table tr { display:block; padding:10px 12px; margin-bottom:6px; background:#fff; border-radius:10px; border:1px solid #eee; }
@@ -154,9 +160,10 @@
         <header>
             <h1>🏢 분양권 매물 요약</h1>
             <div class="subtitle">아파트별 · 평형별 가격 요약 대시보드</div>
+            <button onclick="caches.keys().then(k=>k.forEach(n=>caches.delete(n)));location.href=location.pathname+'?t='+Date.now();" style="margin-top:12px;padding:8px 20px;border:1px solid #e0e0e0;border-radius:10px;background:#fff;font-size:13px;font-family:inherit;font-weight:600;color:#888;cursor:pointer;">🔄 새로고침</button>
         </header>
 
-        <div style="background:#fff;border-radius:16px;padding:18px 28px;margin-bottom:32px;border:1px solid rgba(0,0,0,0.04);display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">
+        <div class="ad-banner" style="background:#fff;border-radius:16px;padding:18px 28px;margin-bottom:32px;border:1px solid rgba(0,0,0,0.04);display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">
             <a href="https://blog.naver.com/chachalacha" target="_blank" style="text-decoration:none;text-align:center;padding:12px 20px;border-radius:12px;background:#f8f9fa;transition:all 0.2s;border:1px solid transparent;" onmouseover="this.style.background='#f0f0f2';this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#f8f9fa';this.style.transform='none'">
                 <div style="font-size:11px;color:#999;font-weight:600;margin-bottom:4px;">제작</div>
                 <div style="font-size:14px;font-weight:800;color:var(--navy);">수잔의 블로그</div>
