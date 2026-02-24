@@ -124,9 +124,8 @@
             .type-table tbody tr.type-row td:nth-child(2)::before { content:'매물 '; font-size:11px; color:#888; }
             .type-table tbody tr.type-row td:nth-child(3)::before { content:'최저 '; font-size:11px; color:#888; }
             .type-table tbody tr.type-row td:nth-child(4)::before { content:'최고 '; font-size:11px; color:#888; }
-            .type-table tbody tr.type-row td:nth-child(5)::before { content:'P최저 '; font-size:11px; color:#888; }
-            .type-table tbody tr.type-row td:nth-child(6)::before { content:'P최고 '; font-size:11px; color:#888; }
-            .type-table tbody tr.type-row td:nth-child(7) { grid-column:1/-1; margin-top:4px; }
+            .type-table tbody tr.type-row td:nth-child(5)::before { content:'P '; font-size:11px; color:#888; }
+            .type-table tbody tr.type-row td:nth-child(6) { grid-column:1/-1; margin-top:4px; }
             .detail-btn { width:100%; padding:8px; font-size:12px; }
 
             /* 상세 패널 모바일 */
@@ -156,6 +155,21 @@
             <h1>🏢 분양권 매물 요약</h1>
             <div class="subtitle">아파트별 · 평형별 가격 요약 대시보드</div>
         </header>
+
+        <div style="background:#fff;border-radius:16px;padding:18px 28px;margin-bottom:32px;border:1px solid rgba(0,0,0,0.04);display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">
+            <a href="https://blog.naver.com/chachalacha" target="_blank" style="text-decoration:none;text-align:center;padding:12px 20px;border-radius:12px;background:#f8f9fa;transition:all 0.2s;border:1px solid transparent;" onmouseover="this.style.background='#f0f0f2';this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#f8f9fa';this.style.transform='none'">
+                <div style="font-size:11px;color:#999;font-weight:600;margin-bottom:4px;">제작</div>
+                <div style="font-size:14px;font-weight:800;color:var(--navy);">수잔의 블로그</div>
+            </a>
+            <a href="https://blog.naver.com/po-tax/222638285211" target="_blank" style="text-decoration:none;text-align:center;padding:12px 20px;border-radius:12px;background:#f8f9fa;transition:all 0.2s;border:1px solid transparent;" onmouseover="this.style.background='#f0f0f2';this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#f8f9fa';this.style.transform='none'">
+                <div style="font-size:11px;color:#999;font-weight:600;margin-bottom:4px;">재개발 전문 세무상담</div>
+                <div style="font-size:14px;font-weight:800;color:var(--navy);">⚖️ 세무회계 평온</div>
+            </a>
+            <a href="https://contents.premium.naver.com/jejeguide/jejemvp" target="_blank" style="text-decoration:none;text-align:center;padding:12px 20px;border-radius:12px;background:#f8f9fa;transition:all 0.2s;border:1px solid transparent;" onmouseover="this.style.background='#f0f0f2';this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#f8f9fa';this.style.transform='none'">
+                <div style="font-size:11px;color:#999;font-weight:600;margin-bottom:4px;">프리미엄 매물 분석</div>
+                <div style="font-size:14px;font-weight:800;color:var(--navy);">📈 재개발 재건축 추천매물 스터디</div>
+            </a>
+        </div>
 
         <div id="loadingSection" class="loading-section">
             <div class="loading-icon">⏳</div>
@@ -196,71 +210,92 @@
 
     <script>
         let allData = [];
-        const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTNbiO170sxkjo_rgOvvis5eTZP0VYfm1aYetd792BcWwXs-b1BsRtX9DQha6LlZkfRIIE_4IIeplIM/pub?gid=0&single=true&output=csv';
+        const SHEET_URLS = [
+            'https://docs.google.com/spreadsheets/d/e/2PACX-1vTNbiO170sxkjo_rgOvvis5eTZP0VYfm1aYetd792BcWwXs-b1BsRtX9DQha6LlZkfRIIE_4IIeplIM/pub?gid=0&single=true&output=csv',
+            'https://docs.google.com/spreadsheets/d/e/2PACX-1vTNbiO170sxkjo_rgOvvis5eTZP0VYfm1aYetd792BcWwXs-b1BsRtX9DQha6LlZkfRIIE_4IIeplIM/pub?gid=614527479&single=true&output=csv',
+            'https://docs.google.com/spreadsheets/d/e/2PACX-1vTNbiO170sxkjo_rgOvvis5eTZP0VYfm1aYetd792BcWwXs-b1BsRtX9DQha6LlZkfRIIE_4IIeplIM/pub?gid=653792883&single=true&output=csv',
+        ];
         window.onload = loadData;
 
-        async function loadData() {
-            const urls = [
-                SHEET_CSV_URL,
-                'https://api.allorigins.win/raw?url='+encodeURIComponent(SHEET_CSV_URL),
-                'https://corsproxy.io/?'+encodeURIComponent(SHEET_CSV_URL),
+        async function fetchOne(url) {
+            const proxies = [
+                url,
+                'https://api.allorigins.win/raw?url='+encodeURIComponent(url),
+                'https://corsproxy.io/?'+encodeURIComponent(url),
             ];
-            const fetchWith = (url) => fetch(url).then(r=>{if(!r.ok)throw 0;return r.text()}).then(t=>{if(t.length<20)throw 0;return t;});
-            const timeout = new Promise((_,r)=>setTimeout(()=>r('timeout'),4000));
-            let text=null;
-            try { text = await Promise.race([...urls.map(u=>fetchWith(u)), timeout]); } catch(e) { text=null; }
-            if(!text){showError('데이터를 불러오지 못했습니다.<br>구글 시트 웹 게시 상태를 확인해주세요.');return;}
-            try{parseCSV(text);buildRegionFilter();applyFilters();document.getElementById('loadingSection').style.display='none';document.getElementById('mainContent').style.display='block';}catch(e){showError('파싱 실패: '+e.message);}
+            const timeout = new Promise((_,r)=>setTimeout(()=>r('timeout'),6000));
+            try {
+                const text = await Promise.race([...proxies.map(u=>fetch(u).then(r=>{if(!r.ok)throw 0;return r.text()}).then(t=>{if(t.length<20)throw 0;return t;})), timeout]);
+                return text;
+            } catch(e) { return null; }
+        }
+
+        async function loadData() {
+            try {
+                const results = await Promise.all(SHEET_URLS.map(u=>fetchOne(u)));
+                const validResults = results.filter(t=>t);
+                if(!validResults.length){showError('데이터를 불러오지 못했습니다.<br>구글 시트 웹 게시 상태를 확인해주세요.');return;}
+                allData = [];
+                validResults.forEach(text=>parseCSV(text));
+                buildRegionFilter();applyFilters();
+                document.getElementById('loadingSection').style.display='none';
+                document.getElementById('mainContent').style.display='block';
+            } catch(e){showError('파싱 실패: '+e.message);}
         }
 
         function parseCSV(text) {
-            allData = [];
             const lines = csvParse(text);
             if (lines.length < 2) return;
 
-            // 헤더 자동 매핑
             const h = lines[0].map(s => s.trim());
-            const fi = (keywords) => h.findIndex(col => keywords.every(k => col.includes(k)));
+            const fi = (kw) => h.findIndex(col => kw.every(k => col.includes(k)));
+            const exact = (name) => h.findIndex(c => c.trim() === name);
             const I = {
-                지역: h.findIndex((c,i) => c.includes('지역') && !c.includes('2')),
-                지역2: fi(['지역2']) !== -1 ? fi(['지역2']) : fi(['지역','2']),
+                지역: exact('지역') >= 0 ? exact('지역') : fi(['지역']),
+                지역명: fi(['지역명']) >= 0 ? fi(['지역명']) : -1,
                 단지명: fi(['단지명']),
-                동: h.findIndex(c => c === '동'),
-                가격: h.findIndex((c,i) => c === '가격'),
-                가격숫자: fi(['가격','숫자']),
-                공급: fi(['공급']),
+                동: exact('동'),
+                매물방식: fi(['매물방식']),
                 전용: fi(['전용']),
-                층: h.findIndex(c => c === '층'),
+                층: exact('층'),
+                특이사항: fi(['특이사항']),
+                확인매물: fi(['확인매물']),
+                거래가액: fi(['거래가액']),
+                월세: fi(['월세']),
+                최소P: fi(['최소P']) >= 0 ? fi(['최소P']) : exact('최소P'),
+                최대P: fi(['최대P']) >= 0 ? fi(['최대P']) : exact('최대P'),
                 방향: fi(['방향']),
-                P금액숫자: fi(['P금액','숫자']),
-                P텍스트: fi(['P','텍스트']),
-                상세설명: fi(['상세']) !== -1 ? fi(['상세']) : fi(['설명']),
-                제공업체: fi(['제공']),
-                중개사: fi(['중개']),
-                확인일: fi(['확인']),
+                부동산: fi(['부동산']),
+                매물URL: fi(['매물URL']) >= 0 ? fi(['매물URL']) : fi(['URL']),
             };
 
             for (let i = 1; i < lines.length; i++) {
                 const c = lines[i];
                 const name = gc(c, I.단지명);
                 if (!name) continue;
+
+                // 거래가액은 만원 단위 → 원 단위로 변환
+                const rawPrice = gc(c, I.거래가액);
+                const priceMan = numParse(rawPrice);
+                const price = priceMan > 0 && isFinite(priceMan) ? priceMan * 10000 : 0;
+
                 allData.push({
                     지역: gc(c, I.지역),
-                    지역2: gc(c, I.지역2),
+                    지역2: gc(c, I.지역명),
                     단지명: name,
                     동: gc(c, I.동),
-                    가격: gc(c, I.가격),
-                    가격숫자: numParse(gc(c, I.가격숫자)),
-                    공급: gc(c, I.공급),
+                    매물방식: gc(c, I.매물방식),
                     전용: gc(c, I.전용),
                     층: gc(c, I.층),
+                    특이사항: gc(c, I.특이사항),
+                    확인일: gc(c, I.확인매물),
+                    가격숫자: price,
+                    월세: gc(c, I.월세),
+                    최소P: gc(c, I.최소P),
+                    최대P: gc(c, I.최대P),
                     방향: gc(c, I.방향),
-                    P금액숫자: numParse(gc(c, I.P금액숫자)),
-                    P텍스트: gc(c, I.P텍스트),
-                    상세설명: gc(c, I.상세설명),
-                    제공업체: gc(c, I.제공업체),
-                    중개사: gc(c, I.중개사),
-                    확인일: gc(c, I.확인일),
+                    부동산: gc(c, I.부동산),
+                    매물URL: gc(c, I.매물URL),
                 });
             }
         }
@@ -301,7 +336,10 @@
             const ms = document.getElementById('filterMinor');
             ms.innerHTML = '<option value="">전체</option>';
             if (major && window._mm[major]) {
-                [...window._mm[major]].sort((a,b)=>a.localeCompare(b,'ko')).forEach(m => { const o=document.createElement('option');o.value=m;o.textContent=m;ms.appendChild(o); });
+                [...window._mm[major]].sort((a,b)=>a.localeCompare(b,'ko')).forEach(m => {
+                    const cnt = new Set(allData.filter(d=>getMajor(d.지역)===major&&d.지역2===m).map(d=>d.단지명)).size;
+                    const o=document.createElement('option');o.value=m;o.textContent=m+' ('+cnt+'개 단지)';ms.appendChild(o);
+                });
             }
             applyFilters();
         }
@@ -317,11 +355,11 @@
             filtered.forEach(d=>{const k=d.단지명;if(!am[k])am[k]={지역:d.지역,지역2:d.지역2,items:[]};am[k].items.push(d);});
             let aptList=Object.entries(am).map(([n,data])=>{
                 const tm={};
-                data.items.forEach(d=>{const k=d.전용;if(!tm[k])tm[k]={전용:d.전용,items:[]};tm[k].items.push(d);});
+                data.items.forEach(d=>{const k=Math.round(parseFloat(d.전용))||d.전용;if(!tm[k])tm[k]={전용:k,items:[]};tm[k].items.push(d);});
                 const types=Object.values(tm).map(t=>{
                     const pr=t.items.map(i=>i.가격숫자).filter(p=>p>0);
-                    const pa=t.items.map(i=>i.P금액숫자).filter(p=>p!==0);
-                    return{전용:t.전용,count:t.items.length,minPrice:pr.length?Math.min(...pr):0,maxPrice:pr.length?Math.max(...pr):0,minP:pa.length?Math.min(...pa):0,maxP:pa.length?Math.max(...pa):0,items:t.items};
+                    const pMins=t.items.map(i=>parseP(i.최소P)).filter(p=>p!==null&&isFinite(p));
+                    return{전용:t.전용,count:t.items.length,minPrice:pr.length?Math.min(...pr):0,maxPrice:pr.length?Math.max(...pr):0,minP:pMins.length?Math.min(...pMins):null,maxP:pMins.length?Math.max(...pMins):null,items:t.items};
                 });
                 const ap=data.items.map(i=>i.가격숫자).filter(p=>p>0);
                 return{name:n,지역:data.지역,지역2:data.지역2,totalCount:data.items.length,minPrice:ap.length?Math.min(...ap):0,maxPrice:ap.length?Math.max(...ap):0,types};
@@ -337,25 +375,52 @@
             const allP=filtered.map(d=>d.가격숫자).filter(p=>p>0);
             document.getElementById('statMinPrice').textContent=allP.length?fmtWon(Math.min(...allP)):'-';
             document.getElementById('statMaxPrice').textContent=allP.length?fmtWon(Math.max(...allP)):'-';
-            renderChart(major, filtered);
+            renderChart(major, minor, filtered);
             render(aptList);
         }
 
         function fmtWon(n) {
-            if(!n) return '-';
+            if(n===null||n===undefined||isNaN(n)||!isFinite(n)) return '-';
+            if(!n) return '0';
+            const neg=n<0;
             const abs=Math.abs(n), eok=Math.floor(abs/1e8), man=Math.floor((abs%1e8)/1e4);
             let s='';
             if(eok>0)s+=eok+'억';
             if(man>0)s+=' '+man.toLocaleString()+'만';
             if(!s)s='0';
-            return (n<0?'-':'')+s.trim();
+            return (neg?'-':'')+s.trim();
         }
 
-        function renderChart(major, filtered) {
+        // "1억 1,893" or "-4,000" or "2억 5,850" → 원 단위 숫자
+        function parseP(text) {
+            if(!text||!text.trim()) return null;
+            let s=text.trim();
+            let neg=false;
+            if(s.startsWith('-')){neg=true;s=s.substring(1).trim();}
+            let total=0;
+            const eokM=s.match(/(\d+)\s*억/);
+            if(eokM) total+=parseInt(eokM[1])*1e8;
+            // 억 뒤의 숫자 또는 억 없이 숫자만
+            let manPart=s.replace(/\d+\s*억\s*/,'').trim();
+            if(!manPart&&!eokM) manPart=s;
+            if(manPart){
+                const num=parseFloat(manPart.replace(/,/g,''));
+                if(!isNaN(num)){
+                    // 만원 단위인지 판단: 억이 있으면 뒤의 숫자는 만원단위
+                    if(eokM) total+=num*1e4;
+                    else total+=num*1e4; // 억 없이 숫자만이면 만원단위
+                }
+            }
+            return neg?-total:total;
+        }
+
+        function renderChart(major, minor, filtered) {
             const section = document.getElementById('chartSection');
             if (!major) { section.classList.remove('show'); return; }
             section.classList.add('show');
-            document.getElementById('chartTitle').textContent = major + ' 단지별 최저가 비교';
+
+            const label = minor ? major + ' ' + minor : major;
+            document.getElementById('chartTitle').textContent = label + ' 단지별 최저가 비교';
             document.getElementById('chartSubtitle').textContent = '59m² · 84m² 기준 · 낮은 순';
 
             const aptMap = {};
@@ -372,27 +437,27 @@
                 name,
                 min59: types['59'] ? Math.min(...types['59']) : 0,
                 min84: types['84'] ? Math.min(...types['84']) : 0,
-            })).filter(d => d.min59 > 0 || d.min84 > 0)
+            })).filter(d => (d.min59 > 0 && isFinite(d.min59)) || (d.min84 > 0 && isFinite(d.min84)))
             .sort((a, b) => (a.min59 || a.min84) - (b.min59 || b.min84));
 
             if (!chartData.length) { section.classList.remove('show'); return; }
 
-            const maxVal = Math.max(...chartData.map(d => Math.max(d.min59, d.min84)));
+            const maxVal = Math.max(...chartData.map(d => Math.max(d.min59||0, d.min84||0)).filter(isFinite));
             const bars = document.getElementById('chartBars');
             bars.innerHTML = '';
 
             chartData.forEach(d => {
-                const pct59 = d.min59 > 0 ? Math.max((d.min59 / maxVal) * 100, 3) : 0;
-                const pct84 = d.min84 > 0 ? Math.max((d.min84 / maxVal) * 100, 3) : 0;
+                const pct59 = d.min59 > 0 && isFinite(d.min59) ? Math.max((d.min59 / maxVal) * 100, 3) : 0;
+                const pct84 = d.min84 > 0 && isFinite(d.min84) ? Math.max((d.min84 / maxVal) * 100, 3) : 0;
 
                 let barsHtml = '';
                 if (pct59) barsHtml += `<div class="chart-bar chart-bar-59" style="width:${pct59}%"></div>`;
                 if (pct84) barsHtml += `<div class="chart-bar chart-bar-84" style="width:${pct84}%"></div>`;
 
                 let valHtml = '';
-                if (d.min59) valHtml += '<span style="color:#8CBBCF">' + fmtWon(d.min59) + '</span>';
-                if (d.min59 && d.min84) valHtml += '<br>';
-                if (d.min84) valHtml += '<span style="color:#CBAB8F">' + fmtWon(d.min84) + '</span>';
+                if (d.min59 && isFinite(d.min59)) valHtml += '<span style="color:#8CBBCF">' + fmtWon(d.min59) + '</span>';
+                if (d.min59 && d.min84 && isFinite(d.min59) && isFinite(d.min84)) valHtml += '<br>';
+                if (d.min84 && isFinite(d.min84)) valHtml += '<span style="color:#CBAB8F">' + fmtWon(d.min84) + '</span>';
 
                 bars.innerHTML += `<div class="chart-row">
                     <div class="chart-label" title="${d.name}">${d.name}</div>
@@ -414,22 +479,23 @@
                 apt.types.forEach((t,ti)=>{
                     const uid='d_'+idx+'_'+ti;
                     rows+=`<tr class="type-row">
-                        <td><span class="type-name">${t.전용}m²</span></td>
+                        <td><span class="type-name">${Math.round(parseFloat(t.전용))}m²</span></td>
                         <td class="td-r"><span class="count-badge">${t.count}</span></td>
                         <td class="td-r price-min">${fmtWon(t.minPrice)}</td>
                         <td class="td-r price-max">${fmtWon(t.maxPrice)}</td>
-                        <td class="td-r ${t.minP<0?'p-neg':'p-pos'}">${fmtWon(t.minP)}</td>
-                        <td class="td-r ${t.maxP<0?'p-neg':'p-pos'}">${fmtWon(t.maxP)}</td>
+                        <td class="td-r ${t.minP!==null&&t.minP<0?'p-neg':'p-pos'}">${t.minP!==null?fmtWon(t.minP):'-'}</td>
                         <td class="td-r"><button class="detail-btn" onclick="toggleD('${uid}',this)">상세▼</button></td>
                     </tr>`;
-                    rows+=`<tr id="${uid}" class="detail-panel"><td colspan="7" style="padding:0;"><div class="detail-inner"><table>
-                        <tr><th>동</th><th>층</th><th>방향</th><th class="r">매매가</th><th class="r">P금액</th><th>비고</th></tr>
-                        ${[...t.items].sort((a,b)=>a.가격숫자-b.가격숫자).map(d=>`<tr>
+                    rows+=`<tr id="${uid}" class="detail-panel"><td colspan="6" style="padding:0;"><div class="detail-inner"><table>
+                        <tr><th>동</th><th>층</th><th>방향</th><th class="r">매매가</th><th class="r">P</th><th>비고</th></tr>
+                        ${[...t.items].sort((a,b)=>a.가격숫자-b.가격숫자).map(d=>{
+                            const pVal=parseP(d.최소P);
+                            return `<tr>
                             <td>${d.동}</td><td>${d.층}</td><td>${d.방향}</td>
-                            <td class="r" style="font-weight:600">${d.가격}</td>
-                            <td class="r" style="font-weight:600;color:${d.P금액숫자<0?'var(--red)':d.P금액숫자>0?'var(--green)':'#888'}">${d.P텍스트||'-'}</td>
-                            <td style="color:#888;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(d.상세설명||'').replace(/"/g,'&quot;')}">${d.상세설명||'-'}</td>
-                        </tr>`).join('')}
+                            <td class="r" style="font-weight:600">${fmtWon(d.가격숫자)}</td>
+                            <td class="r" style="font-weight:600;color:${pVal!==null&&pVal<0?'var(--red)':pVal!==null&&pVal>0?'var(--green)':'#888'}">${d.최소P||'-'}</td>
+                            <td style="color:#888;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(d.특이사항||'').replace(/"/g,'&quot;')}">${d.매물URL?'<a href="'+d.매물URL+'" target="_blank" style="color:var(--gold);text-decoration:none;">🔗</a> ':''}${d.특이사항||'-'}</td>
+                        </tr>`}).join('')}
                     </table></div></td></tr>`;
                 });
 
@@ -442,7 +508,7 @@
                         </div>
                     </div>
                     <div class="type-table-wrap"><table class="type-table">
-                        <thead><tr><th>전용면적</th><th class="r">매물 수</th><th class="r">최저가</th><th class="r">최고가</th><th class="r">P 최저</th><th class="r">P 최고</th><th></th></tr></thead>
+                        <thead><tr><th>전용면적</th><th class="r">매물 수</th><th class="r">최저가</th><th class="r">최고가</th><th class="r">P</th><th></th></tr></thead>
                         <tbody>${rows}</tbody>
                     </table></div>`;
                 ct.appendChild(card);
