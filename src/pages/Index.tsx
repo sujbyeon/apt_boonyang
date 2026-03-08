@@ -43,7 +43,7 @@ const Index = () => {
   }, [apartments]);
 
   // Initialize price range when data loads
-  useMemo(() => {
+  useEffect(() => {
     if (apartments.length > 0 && !priceRangeInitialized) {
       setPriceRange([priceBounds.min, priceBounds.max]);
       setPriceRangeInitialized(true);
