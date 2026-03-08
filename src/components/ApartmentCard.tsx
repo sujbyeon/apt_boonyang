@@ -143,25 +143,32 @@ function TypeRow({ type, isExpanded, onToggle }: { type: ApartmentType; isExpand
               <table className="w-full">
                 <thead>
                   <tr>
+                    <th className="text-left text-[11px] text-muted-foreground font-bold py-1.5 px-2">동</th>
                     <th className="text-left text-[11px] text-muted-foreground font-bold py-1.5 px-2">층수</th>
-                    <th className="text-left text-[11px] text-muted-foreground font-bold py-1.5 px-2">면적</th>
+                    <th className="text-left text-[11px] text-muted-foreground font-bold py-1.5 px-2">방향</th>
                     <th className="text-right text-[11px] text-muted-foreground font-bold py-1.5 px-2">가격</th>
                     <th className="text-right text-[11px] text-muted-foreground font-bold py-1.5 px-2">프리미엄</th>
-                    <th className="text-left text-[11px] text-muted-foreground font-bold py-1.5 px-2">날짜</th>
                     <th className="text-left text-[11px] text-muted-foreground font-bold py-1.5 px-2">비고</th>
                   </tr>
                 </thead>
                 <tbody>
                   {type.listings.map((l, i) => (
                     <tr key={i} className="border-t border-border/50">
-                      <td className="py-2 px-2 text-sm font-bold">{l.floor}</td>
-                      <td className="py-2 px-2 text-sm">{l.area}</td>
-                      <td className="py-2 px-2 text-sm text-right tabular-nums font-bold">{formatPrice(l.price)}</td>
-                      <td className={`py-2 px-2 text-sm text-right tabular-nums font-bold ${l.premium >= 0 ? "text-success" : "text-destructive"}`}>
-                        {l.premium >= 0 ? "+" : ""}{formatPrice(l.premium)}
+                      <td className="py-2 px-2 text-sm">{l.dong || "-"}</td>
+                      <td className="py-2 px-2 text-sm font-bold">{l.floor || "-"}</td>
+                      <td className="py-2 px-2 text-sm">{l.direction || "-"}</td>
+                      <td className="py-2 px-2 text-sm text-right tabular-nums font-bold">
+                        {l.price > 0 ? formatPrice(l.price) : "-"}
                       </td>
-                      <td className="py-2 px-2 text-sm text-muted-foreground">{l.date}</td>
-                      <td className="py-2 px-2 text-sm text-muted-foreground">{l.note || "-"}</td>
+                      <td className={`py-2 px-2 text-sm text-right tabular-nums font-bold ${l.premium >= 0 ? "text-success" : "text-destructive"}`}>
+                        {l.premium !== 0 ? (l.premium >= 0 ? "+" : "") + formatPrice(l.premium) : "-"}
+                      </td>
+                      <td className="py-2 px-2 text-sm text-muted-foreground">
+                        {l.url ? (
+                          <a href={l.url} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline mr-1">🔗</a>
+                        ) : null}
+                        {l.note || "-"}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
