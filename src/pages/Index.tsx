@@ -8,6 +8,7 @@ import { ApartmentCard } from "@/components/ApartmentCard";
 import { PriceChart } from "@/components/PriceChart";
 import { ComparisonPanel } from "@/components/ComparisonPanel";
 import { AdBanner } from "@/components/AdBanner";
+import { ExportButton } from "@/components/ExportButton";
 import { toast } from "sonner";
 
 const Index = () => {
