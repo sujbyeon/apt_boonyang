@@ -183,7 +183,7 @@ function buildApartments(rawData: RawRow[]): Apartment[] {
   return Object.entries(aptMap).map(([name, data], idx) => {
     const typeMap: Record<string, RawRow[]> = {};
     data.items.forEach(d => {
-      const k = String(Math.round(parseFloat(d.전용)) || d.전용);
+      const k = String(Math.floor(parseFloat(d.전용)) || d.전용);
       if (!typeMap[k]) typeMap[k] = [];
       typeMap[k].push(d);
     });
