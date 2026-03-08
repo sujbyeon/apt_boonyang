@@ -73,8 +73,8 @@ const Index = () => {
       if (next.has(id)) {
         next.delete(id);
       } else {
-        if (next.size >= 3) {
-          toast.error("최대 3개까지 비교할 수 있습니다");
+        if (next.size >= 5) {
+          toast.error("최대 5개까지 비교할 수 있습니다");
           return prev;
         }
         next.add(id);

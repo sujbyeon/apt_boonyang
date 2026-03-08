@@ -21,7 +21,7 @@ export function ComparisonPanel({ apartments, onRemove, onClear }: ComparisonPan
           전체 해제
         </button>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         {apartments.map((apt) => (
           <div key={apt.id} className="bg-muted/40 rounded-xl p-4 relative">
             <button
