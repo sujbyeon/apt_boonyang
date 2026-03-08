@@ -35,12 +35,35 @@ const Index = () => {
     return [...new Set(filtered.map((a) => a.subRegion))];
   }, [selectedRegion, apartments]);
 
+  // Compute global price bounds from all apartments (before filtering)
+  const priceBounds = useMemo(() => {
+    if (apartments.length === 0) return { min: 0, max: 100000 };
+    const allPrices = apartments.flatMap(a => a.types.flatMap(t => t.listings.map(l => l.price)));
+    return { min: Math.min(...allPrices), max: Math.max(...allPrices) };
+  }, [apartments]);
+
+  // Initialize price range when data loads
+  useMemo(() => {
+    if (apartments.length > 0 && !priceRangeInitialized) {
+      setPriceRange([priceBounds.min, priceBounds.max]);
+      setPriceRangeInitialized(true);
+    }
+  }, [apartments, priceBounds, priceRangeInitialized]);
+
   const filtered = useMemo(() => {
     let result = [...apartments];
     if (selectedRegion) result = result.filter((a) => a.region === selectedRegion);
     if (selectedSubRegion) result = result.filter((a) => a.subRegion === selectedSubRegion);
     if (searchQuery) result = result.filter((a) => a.name.toLowerCase().includes(searchQuery.toLowerCase()));
     if (showFavoritesOnly) result = result.filter((a) => favorites.has(a.id));
+
+    // Price range filter: keep apartments that have at least one listing in range
+    if (priceRangeInitialized) {
+      result = result.filter((a) => {
+        const prices = a.types.flatMap(t => t.listings.map(l => l.price));
+        return prices.some(p => p >= priceRange[0] && p <= priceRange[1]);
+      });
+    }
 
     switch (sortBy) {
       case "listings": result.sort((a, b) => getTotalListings(b) - getTotalListings(a)); break;
@@ -49,7 +72,7 @@ const Index = () => {
       default: result.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
     }
     return result;
-  }, [selectedRegion, selectedSubRegion, searchQuery, sortBy, showFavoritesOnly, favorites, apartments]);
+  }, [selectedRegion, selectedSubRegion, searchQuery, sortBy, showFavoritesOnly, favorites, apartments, priceRange, priceRangeInitialized]);
 
   const totalListings = useMemo(() => filtered.reduce((s, a) => s + getTotalListings(a), 0), [filtered]);
   const globalMin = useMemo(() => filtered.length ? Math.min(...filtered.map(getMinPrice)) : 0, [filtered]);
