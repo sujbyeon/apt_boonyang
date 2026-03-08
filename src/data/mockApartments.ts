@@ -5,6 +5,9 @@ export interface Listing {
   premium: number;
   date: string;
   note: string;
+  dong?: string;
+  direction?: string;
+  url?: string;
 }
 
 export interface ApartmentType {
