@@ -122,6 +122,7 @@ const Index = () => {
               <Heart className="w-3.5 h-3.5" fill={showFavoritesOnly ? "currentColor" : "none"} />
               즐겨찾기 {favorites.size > 0 && `(${favorites.size})`}
             </button>
+            <ExportButton apartments={filtered} />
           </div>
         </header>
 
