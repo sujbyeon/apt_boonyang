@@ -214,16 +214,21 @@ function MobileTypeCard({ type, isExpanded, onToggle }: { type: ApartmentType; i
           {type.listings.map((l, i) => (
             <div key={i} className="bg-card rounded-lg p-3 border border-border/50 text-sm">
               <div className="flex justify-between">
-                <span className="font-bold">{l.floor}</span>
-                <span className="font-bold tabular-nums">{formatPrice(l.price)}</span>
+                <span className="font-bold">{l.dong ? `${l.dong}동 ` : ""}{l.floor || "-"}</span>
+                <span className="font-bold tabular-nums">{l.price > 0 ? formatPrice(l.price) : "-"}</span>
               </div>
               <div className="flex justify-between mt-1 text-xs text-muted-foreground">
-                <span>{l.area} · {l.date}</span>
+                <span>{l.direction || ""}{l.direction && " · "}{l.date}</span>
                 <span className={`font-bold ${l.premium >= 0 ? "text-success" : "text-destructive"}`}>
-                  P {l.premium >= 0 ? "+" : ""}{formatPrice(l.premium)}
+                  P {l.premium !== 0 ? (l.premium >= 0 ? "+" : "") + formatPrice(l.premium) : "-"}
                 </span>
               </div>
-              {l.note && <div className="text-xs text-muted-foreground mt-1">{l.note}</div>}
+              {(l.note || l.url) && (
+                <div className="text-xs text-muted-foreground mt-1">
+                  {l.url ? <a href={l.url} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline mr-1">🔗</a> : null}
+                  {l.note || ""}
+                </div>
+              )}
             </div>
           ))}
         </div>
