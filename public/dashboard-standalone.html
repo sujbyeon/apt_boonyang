@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>분양권 매물 요약 대시보드</title>
+    <meta name="description" content="아파트 분양권 매물 가격 요약 - 단지별, 평형별 최저가/최고가/프리미엄 비교" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <style>
+        :root {
+            --navy: hsl(205, 80%, 11%);
+            --gold: hsl(25, 30%, 53%);
+            --gold-light: hsl(30, 40%, 95%);
+            --red: hsl(0, 72%, 56%);
+            --green: hsl(145, 50%, 42%);
+            --blue: hsl(207, 60%, 44%);
+            --bg: hsl(210, 20%, 97%);
+            --card: hsl(0, 0%, 100%);
+            --muted: hsl(210, 20%, 95%);
+            --muted-fg: hsl(210, 10%, 50%);
+            --border: hsl(210, 20%, 91%);
+            --radius: 16px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: "Pretendard Variable", Pretendard, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--navy);
+            padding: 48px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            -webkit-font-smoothing: antialiased;
+            letter-spacing: -0.02em;
+        }
+
+        .container { width: 100%; max-width: 1200px; }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade { animation: fadeIn 0.5s ease both; }
+        .animate-slide { animation: slideUp 0.5s ease both; }
+
+        /* Header */
+        header { text-align: center; margin-bottom: 40px; }
+        h1 { font-size: 38px; font-weight: 800; letter-spacing: -0.05em; margin-bottom: 8px; }
+        .subtitle { font-size: 16px; color: var(--gold); font-weight: 600; }
+        .header-actions { display: flex; justify-content: center; gap: 10px; margin-top: 16px; }
+        .btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 16px; border-radius: 12px; font-size: 14px;
+            font-weight: 600; border: none; cursor: pointer;
+            font-family: inherit; transition: all 0.2s;
+        }
+        .btn-muted { background: var(--muted); color: var(--muted-fg); }
+        .btn-muted:hover { background: var(--gold-light); color: var(--gold); }
+        .btn-fav { background: var(--muted); color: var(--muted-fg); }
+        .btn-fav:hover, .btn-fav.active { background: hsl(0, 72%, 56%, 0.1); color: var(--red); }
+
+        /* Stats */
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
+        .stat-card {
+            background: var(--card); border-radius: var(--radius); padding: 24px 20px;
+            text-align: center; border: 1px solid var(--border);
+        }
+        .stat-icon { font-size: 28px; margin-bottom: 8px; }
+        .stat-label { font-size: 13px; color: var(--muted-fg); font-weight: 500; margin-bottom: 4px; }
+        .stat-value { font-size: 24px; font-weight: 800; letter-spacing: -0.03em; }
+
+        /* Filter */
+        .filter-bar {
+            background: var(--card); border-radius: var(--radius); padding: 24px;
+            margin-bottom: 32px; display: flex; gap: 16px; border: 1px solid var(--border);
+            flex-wrap: wrap;
+        }
+        .filter-item { flex: 1; min-width: 160px; }
+        .filter-item label { display: block; font-size: 12px; font-weight: 600; color: var(--muted-fg); margin-bottom: 6px; }
+        .filter-item select, .filter-item input {
+            width: 100%; padding: 10px 14px; border: 1px solid var(--border);
+            border-radius: 12px; font-size: 14px; font-family: inherit; background: #fff;
+        }
+        .filter-item select:focus, .filter-item input:focus { outline: none; border-color: var(--gold); }
+
+        /* Chart */
+        .chart-section {
+            background: var(--card); border-radius: var(--radius); padding: 24px 28px;
+            margin-bottom: 32px; border: 1px solid var(--border);
+        }
+        .chart-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+        .chart-subtitle { font-size: 13px; color: var(--muted-fg); margin-bottom: 16px; }
+        .chart-legend { display: flex; gap: 16px; margin-bottom: 16px; }
+        .legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--muted-fg); }
+        .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .chart-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; height: 28px; }
+        .chart-label { width: 140px; min-width: 140px; font-size: 12px; font-weight: 600; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .chart-bars { flex: 1; display: flex; flex-direction: column; gap: 2px; justify-content: center; }
+        .chart-bar { height: 12px; border-radius: 3px; transition: width 0.6s ease; min-width: 2px; }
+        .chart-bar-59 { background: hsl(200, 35%, 68%); }
+        .chart-bar-84 { background: hsl(25, 30%, 68%); }
+        .chart-val { width: 90px; min-width: 90px; font-size: 11px; font-weight: 600; color: var(--muted-fg); font-variant-numeric: tabular-nums; line-height: 1.5; }
+
+        /* Comparison Panel */
+        .compare-panel {
+            background: var(--card); border-radius: var(--radius); padding: 24px;
+            margin-bottom: 32px; border: 2px solid hsl(207, 60%, 44%, 0.3);
+            display: none;
+        }
+        .compare-panel.show { display: block; }
+        .compare-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .compare-header h3 { font-size: 16px; font-weight: 700; }
+        .compare-clear { font-size: 12px; font-weight: 600; color: var(--muted-fg); cursor: pointer; border: none; background: none; font-family: inherit; }
+        .compare-clear:hover { color: var(--red); }
+        .compare-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .compare-item { background: var(--muted); border-radius: 12px; padding: 16px; position: relative; }
+        .compare-remove { position: absolute; top: 10px; right: 10px; background: none; border: none; cursor: pointer; color: var(--muted-fg); font-size: 16px; }
+        .compare-remove:hover { color: var(--red); }
+        .compare-name { font-weight: 700; font-size: 14px; margin-bottom: 4px; padding-right: 20px; }
+        .compare-loc { font-size: 12px; color: var(--muted-fg); margin-bottom: 12px; }
+        .compare-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 4px; }
+
+        /* Apartment Card */
+        .apt-card {
+            background: var(--card); border-radius: var(--radius); margin-bottom: 20px;
+            border: 1px solid var(--border); overflow: hidden;
+        }
+        .apt-header { padding: 24px 28px 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+        .apt-name { font-size: 20px; font-weight: 800; letter-spacing: -0.03em; }
+        .apt-location { font-size: 14px; color: var(--muted-fg); margin-top: 4px; }
+        .apt-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .badge { padding: 6px 12px; border-radius: 12px; font-size: 13px; font-weight: 700; }
+        .badge-gold { background: var(--gold-light); color: var(--gold); }
+        .badge-blue { background: hsl(207, 60%, 44%, 0.1); color: var(--blue); }
+        .icon-btn {
+            width: 36px; height: 36px; border-radius: 12px; border: none;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s; font-size: 16px; font-family: inherit;
+        }
+        .icon-btn-fav { background: var(--muted); color: var(--muted-fg); }
+        .icon-btn-fav:hover, .icon-btn-fav.active { background: hsl(0, 72%, 56%, 0.1); color: var(--red); }
+        .icon-btn-cmp { background: var(--muted); color: var(--muted-fg); }
+        .icon-btn-cmp:hover, .icon-btn-cmp.active { background: hsl(207, 60%, 44%, 0.1); color: var(--blue); }
+
+        /* Type Table */
+        .type-table-wrap { padding: 0 28px 24px; }
+        .type-table { width: 100%; border-collapse: collapse; }
+        .type-table thead th { font-size: 12px; font-weight: 700; color: var(--muted-fg); padding: 10px 12px; text-align: left; border-bottom: 2px solid var(--muted); }
+        .type-table thead th.r { text-align: right; }
+        .type-table tbody td { padding: 12px; font-size: 14px; font-weight: 500; border-bottom: 1px solid var(--muted); }
+        .type-table tbody tr:last-child td { border-bottom: none; }
+        .type-table tbody tr:hover { background: hsl(210, 20%, 98%); }
+        .td-r { text-align: right; font-variant-numeric: tabular-nums; }
+        .fw700 { font-weight: 700; }
+        .c-green { color: var(--green); }
+        .c-red { color: var(--red); }
+        .detail-btn {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 6px 12px; border: 1px solid var(--border); border-radius: 8px;
+            font-size: 12px; font-weight: 600; color: var(--muted-fg);
+            cursor: pointer; background: none; font-family: inherit; transition: all 0.2s;
+        }
+        .detail-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+        /* Detail Panel */
+        .detail-row { display: none; }
+        .detail-row.open { display: table-row; }
+        .detail-inner { background: hsl(210, 20%, 97%); padding: 16px; }
+        .detail-inner table { width: 100%; border-collapse: collapse; }
+        .detail-inner th { font-size: 11px; color: var(--muted-fg); font-weight: 700; padding: 6px 8px; text-align: left; }
+        .detail-inner th.r { text-align: right; }
+        .detail-inner td { font-size: 13px; padding: 8px; border-top: 1px solid var(--border); }
+        .detail-inner td.r { text-align: right; }
+
+        /* Toast */
+        .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 1000; }
+        .toast {
+            background: var(--navy); color: #fff; padding: 12px 20px; border-radius: 12px;
+            font-size: 14px; font-weight: 600; margin-top: 8px;
+            animation: fadeIn 0.3s ease; box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+
+        /* Empty */
+        .empty-state { background: var(--card); border-radius: var(--radius); padding: 48px; text-align: center; border: 1px solid var(--border); }
+        .empty-state p { font-size: 16px; color: var(--muted-fg); }
+
+        @media (max-width: 768px) {
+            body { padding: 24px 12px; }
+            h1 { font-size: 26px; }
+            .subtitle { font-size: 14px; }
+            header { margin-bottom: 28px; }
+            .stats { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+            .stat-card { padding: 20px 14px; }
+            .stat-value { font-size: 20px; }
+            .filter-bar { flex-direction: column; padding: 16px; gap: 10px; }
+            .filter-item { min-width: 100%; }
+            .apt-header { padding: 20px 16px 14px; flex-direction: column; align-items: flex-start; }
+            .apt-name { font-size: 18px; }
+            .type-table-wrap { padding: 0 12px 20px; overflow-x: auto; }
+            .chart-label { width: 70px; min-width: 70px; font-size: 10px; }
+            .chart-val { width: 65px; min-width: 65px; font-size: 9px; }
+            .compare-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="app"></div>
+<div class="toast-container" id="toasts"></div>
+
+<script>
+// ==================== DATA ====================
+const apartments = [
+  {
+    id: "1", name: "래미안 원베일리", location: "서울 서초구 반포동", region: "서울", subRegion: "서초구",
+    types: [
+      { name: "59A", areaPy: 24, areaM2: 59, listings: [
+        { floor: "15층", area: "59.9㎡", price: 285000, premium: 32000, date: "2025.03", note: "로얄층 남향" },
+        { floor: "8층", area: "59.9㎡", price: 275000, premium: 22000, date: "2025.03", note: "중층 조망권" },
+        { floor: "3층", area: "59.9㎡", price: 268000, premium: 15000, date: "2025.02", note: "저층" },
+      ]},
+      { name: "84A", areaPy: 34, areaM2: 84, listings: [
+        { floor: "22층", area: "84.9㎡", price: 385000, premium: 55000, date: "2025.03", note: "고층 한강뷰" },
+        { floor: "12층", area: "84.9㎡", price: 365000, premium: 35000, date: "2025.03", note: "중층" },
+      ]},
+    ],
+  },
+  {
+    id: "2", name: "디에이치 클래스트", location: "서울 강남구 개포동", region: "서울", subRegion: "강남구",
+    types: [
+      { name: "59B", areaPy: 24, areaM2: 59, listings: [
+        { floor: "18층", area: "59.5㎡", price: 245000, premium: 28000, date: "2025.03", note: "탑층 남향" },
+        { floor: "10층", area: "59.5㎡", price: 232000, premium: 15000, date: "2025.02", note: "" },
+      ]},
+      { name: "84B", areaPy: 34, areaM2: 84, listings: [
+        { floor: "20층", area: "84.3㎡", price: 340000, premium: 48000, date: "2025.03", note: "고층 판상형" },
+        { floor: "5층", area: "84.3㎡", price: 315000, premium: 23000, date: "2025.02", note: "저층" },
+        { floor: "14층", area: "84.3㎡", price: 328000, premium: 36000, date: "2025.03", note: "중층 정남향" },
+      ]},
+    ],
+  },
+  {
+    id: "3", name: "올림픽파크포레온", location: "서울 강동구 둔촌동", region: "서울", subRegion: "강동구",
+    types: [
+      { name: "59A", areaPy: 24, areaM2: 59, listings: [
+        { floor: "25층", area: "59.9㎡", price: 178000, premium: 12000, date: "2025.03", note: "고층" },
+        { floor: "7층", area: "59.9㎡", price: 165000, premium: -1000, date: "2025.02", note: "마피" },
+      ]},
+      { name: "84C", areaPy: 34, areaM2: 84, listings: [
+        { floor: "30층", area: "84.7㎡", price: 225000, premium: 18000, date: "2025.03", note: "최고층" },
+        { floor: "15층", area: "84.7㎡", price: 215000, premium: 8000, date: "2025.03", note: "" },
+        { floor: "4층", area: "84.7㎡", price: 205000, premium: -2000, date: "2025.01", note: "저층 마피" },
+      ]},
+    ],
+  },
+  {
+    id: "4", name: "힐스테이트 메디알레", location: "경기 과천시 별양동", region: "경기", subRegion: "과천시",
+    types: [
+      { name: "59A", areaPy: 24, areaM2: 59, listings: [
+        { floor: "12층", area: "59.8㎡", price: 142000, premium: 8000, date: "2025.03", note: "역세권" },
+      ]},
+      { name: "84A", areaPy: 34, areaM2: 84, listings: [
+        { floor: "18층", area: "84.2㎡", price: 198000, premium: 15000, date: "2025.03", note: "고층 조망" },
+        { floor: "6층", area: "84.2㎡", price: 185000, premium: 2000, date: "2025.02", note: "" },
+      ]},
+    ],
+  },
+  {
+    id: "5", name: "검단 파라곤센트럴시티", location: "인천 서구 원당동", region: "인천", subRegion: "서구",
+    types: [
+      { name: "59A", areaPy: 24, areaM2: 59, listings: [
+        { floor: "10층", area: "59.6㎡", price: 42000, premium: -3000, date: "2025.03", note: "마피" },
+        { floor: "20층", area: "59.6㎡", price: 45000, premium: 0, date: "2025.03", note: "고층" },
+      ]},
+      { name: "84B", areaPy: 34, areaM2: 84, listings: [
+        { floor: "15층", area: "84.1㎡", price: 55000, premium: -2000, date: "2025.03", note: "" },
+      ]},
+    ],
+  },
+];
+
+// ==================== HELPERS ====================
+function formatPrice(manwon) {
+  const abs = Math.abs(manwon);
+  const sign = manwon < 0 ? "-" : "";
+  if (abs >= 10000) {
+    const eok = Math.floor(abs / 10000);
+    const rest = abs % 10000;
+    return sign + (rest > 0 ? `${eok}억 ${rest.toLocaleString()}만` : `${eok}억`);
+  }
+  return sign + `${abs.toLocaleString()}만`;
+}
+function getMinPrice(apt) { return Math.min(...apt.types.flatMap(t => t.listings.map(l => l.price))); }
+function getMaxPrice(apt) { return Math.max(...apt.types.flatMap(t => t.listings.map(l => l.price))); }
+function getTotalListings(apt) { return apt.types.reduce((s, t) => s + t.listings.length, 0); }
+
+// ==================== STATE ====================
+let state = {
+  region: "", subRegion: "", search: "", sortBy: "name",
+  favorites: new Set(), comparing: new Set(), showFavOnly: false,
+  expandedTypes: {}
+};
+
+function getFiltered() {
+  let result = [...apartments];
+  if (state.region) result = result.filter(a => a.region === state.region);
+  if (state.subRegion) result = result.filter(a => a.subRegion === state.subRegion);
+  if (state.search) result = result.filter(a => a.name.includes(state.search));
+  if (state.showFavOnly) result = result.filter(a => state.favorites.has(a.id));
+  switch (state.sortBy) {
+    case "listings": result.sort((a, b) => getTotalListings(b) - getTotalListings(a)); break;
+    case "minPrice": result.sort((a, b) => getMinPrice(a) - getMinPrice(b)); break;
+    case "maxPrice": result.sort((a, b) => getMaxPrice(b) - getMaxPrice(a)); break;
+    default: result.sort((a, b) => a.name.localeCompare(b.name));
+  }
+  return result;
+}
+
+// ==================== TOAST ====================
+function showToast(msg) {
+  const container = document.getElementById('toasts');
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  container.appendChild(el);
+  setTimeout(() => el.remove(), 2500);
+}
+
+// ==================== RENDER ====================
+function premiumHtml(val) {
+  const cls = val >= 0 ? 'c-green' : 'c-red';
+  return `<span class="${cls} fw700">${val >= 0 ? '+' : ''}${formatPrice(val)}</span>`;
+}
+
+function render() {
+  const filtered = getFiltered();
+  const regions = [...new Set(apartments.map(a => a.region))];
+  const subRegions = [...new Set((state.region ? apartments.filter(a => a.region === state.region) : apartments).map(a => a.subRegion))];
+  const totalListings = filtered.reduce((s, a) => s + getTotalListings(a), 0);
+  const globalMin = filtered.length ? Math.min(...filtered.map(getMinPrice)) : 0;
+  const globalMax = filtered.length ? Math.max(...filtered.map(getMaxPrice)) : 0;
+  const comparingApts = apartments.filter(a => state.comparing.has(a.id));
+
+  let html = `
+    <header class="animate-fade">
+      <h1>🏢 분양권 매물 요약</h1>
+      <p class="subtitle">아파트별 · 평형별 가격 요약 대시보드</p>
+      <div class="header-actions">
+        <button class="btn btn-muted" onclick="resetFilters()">🔄 새로고침</button>
+        <button class="btn btn-fav ${state.showFavOnly ? 'active' : ''}" onclick="toggleFavOnly()">
+          ${state.showFavOnly ? '❤️' : '🤍'} 즐겨찾기 ${state.favorites.size > 0 ? '(' + state.favorites.size + ')' : ''}
+        </button>
+      </div>
+    </header>
+
+    <div class="stats animate-fade">
+      <div class="stat-card"><div class="stat-icon">🏠</div><div class="stat-label">총 단지 수</div><div class="stat-value">${filtered.length}</div></div>
+      <div class="stat-card"><div class="stat-icon">📋</div><div class="stat-label">총 매물 수</div><div class="stat-value">${totalListings}</div></div>
+      <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-label">최저가</div><div class="stat-value">${filtered.length ? formatPrice(globalMin) : '-'}</div></div>
+      <div class="stat-card"><div class="stat-icon">📈</div><div class="stat-label">최고가</div><div class="stat-value">${filtered.length ? formatPrice(globalMax) : '-'}</div></div>
+    </div>
+
+    <div class="filter-bar animate-fade">
+      <div class="filter-item">
+        <label>광역시도</label>
+        <select onchange="setState('region', this.value); setState('subRegion', '')">
+          <option value="">전체</option>
+          ${regions.map(r => `<option value="${r}" ${state.region === r ? 'selected' : ''}>${r}</option>`).join('')}
+        </select>
+      </div>
+      <div class="filter-item">
+        <label>세부지역</label>
+        <select onchange="setState('subRegion', this.value)">
+          <option value="">전체</option>
+          ${subRegions.map(r => `<option value="${r}" ${state.subRegion === r ? 'selected' : ''}>${r}</option>`).join('')}
+        </select>
+      </div>
+      <div class="filter-item">
+        <label>단지명 검색</label>
+        <input type="text" placeholder="검색..." value="${state.search}" oninput="setState('search', this.value)">
+      </div>
+      <div class="filter-item">
+        <label>정렬</label>
+        <select onchange="setState('sortBy', this.value)">
+          <option value="name" ${state.sortBy === 'name' ? 'selected' : ''}>이름순</option>
+          <option value="listings" ${state.sortBy === 'listings' ? 'selected' : ''}>매물 많은순</option>
+          <option value="minPrice" ${state.sortBy === 'minPrice' ? 'selected' : ''}>최저가 낮은순</option>
+          <option value="maxPrice" ${state.sortBy === 'maxPrice' ? 'selected' : ''}>최고가 높은순</option>
+        </select>
+      </div>
+    </div>`;
+
+  // Comparison Panel
+  if (comparingApts.length > 0) {
+    html += `<div class="compare-panel show animate-fade">
+      <div class="compare-header">
+        <h3>📊 비교 패널</h3>
+        <button class="compare-clear" onclick="clearCompare()">전체 해제</button>
+      </div>
+      <div class="compare-grid">
+        ${comparingApts.map(apt => `
+          <div class="compare-item">
+            <button class="compare-remove" onclick="toggleCompare('${apt.id}')">✕</button>
+            <div class="compare-name">${apt.name}</div>
+            <div class="compare-loc">${apt.location}</div>
+            <div class="compare-row"><span style="color:var(--muted-fg)">매물</span><span class="fw700">${getTotalListings(apt)}건</span></div>
+            <div class="compare-row"><span style="color:var(--muted-fg)">↓ 최저</span><span class="fw700 c-green">${formatPrice(getMinPrice(apt))}</span></div>
+            <div class="compare-row"><span style="color:var(--muted-fg)">↑ 최고</span><span class="fw700 c-red">${formatPrice(getMaxPrice(apt))}</span></div>
+          </div>
+        `).join('')}
+      </div>
+    </div>`;
+  }
+
+  // Chart
+  if (filtered.length > 0) {
+    const maxVal = Math.max(...filtered.flatMap(a => a.types.flatMap(t => t.listings.map(l => l.price))));
+    html += `<div class="chart-section animate-fade">
+      <div class="chart-title">단지별 최저가 비교</div>
+      <div class="chart-subtitle">59㎡ · 84㎡ 기준</div>
+      <div class="chart-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:hsl(200,35%,68%)"></div>59㎡</div>
+        <div class="legend-item"><div class="legend-dot" style="background:hsl(25,30%,68%)"></div>84㎡</div>
+      </div>
+      ${filtered.map(apt => {
+        const p59 = apt.types.filter(t => t.areaM2 === 59).flatMap(t => t.listings.map(l => l.price));
+        const p84 = apt.types.filter(t => t.areaM2 === 84).flatMap(t => t.listings.map(l => l.price));
+        const min59 = p59.length ? Math.min(...p59) : 0;
+        const min84 = p84.length ? Math.min(...p84) : 0;
+        const w59 = maxVal ? (min59 / maxVal * 100) : 0;
+        const w84 = maxVal ? (min84 / maxVal * 100) : 0;
+        const label = apt.name.length > 8 ? apt.name.slice(0, 8) + '…' : apt.name;
+        return `<div class="chart-row">
+          <div class="chart-label">${label}</div>
+          <div class="chart-bars">
+            ${min59 ? `<div class="chart-bar chart-bar-59" style="width:${w59}%"></div>` : ''}
+            ${min84 ? `<div class="chart-bar chart-bar-84" style="width:${w84}%"></div>` : ''}
+          </div>
+          <div class="chart-val">${min59 ? formatPrice(min59) : '-'}<br>${min84 ? formatPrice(min84) : '-'}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+
+  // Cards
+  if (filtered.length === 0) {
+    html += `<div class="empty-state"><p>조건에 맞는 매물이 없습니다</p></div>`;
+  } else {
+    filtered.forEach((apt, i) => {
+      const isFav = state.favorites.has(apt.id);
+      const isCmp = state.comparing.has(apt.id);
+      html += `<div class="apt-card animate-slide" style="animation-delay:${i * 80}ms">
+        <div class="apt-header">
+          <div>
+            <div class="apt-name">${apt.name}</div>
+            <div class="apt-location">${apt.location}</div>
+          </div>
+          <div class="apt-actions">
+            <span class="badge badge-gold">${getTotalListings(apt)}건</span>
+            <span class="badge badge-blue">${formatPrice(getMinPrice(apt))} ~ ${formatPrice(getMaxPrice(apt))}</span>
+            <button class="icon-btn icon-btn-fav ${isFav ? 'active' : ''}" onclick="toggleFavorite('${apt.id}')">${isFav ? '❤️' : '🤍'}</button>
+            <button class="icon-btn icon-btn-cmp ${isCmp ? 'active' : ''}" onclick="toggleCompare('${apt.id}')">📊</button>
+          </div>
+        </div>
+        <div class="type-table-wrap">
+          <table class="type-table">
+            <thead><tr>
+              <th>타입</th><th class="r">매물</th><th class="r">최저가</th><th class="r">최고가</th><th class="r">P 범위</th><th class="r"></th>
+            </tr></thead>
+            <tbody>
+              ${apt.types.map(type => {
+                const prices = type.listings.map(l => l.price);
+                const premiums = type.listings.map(l => l.premium);
+                const minP = Math.min(...prices), maxP = Math.max(...prices);
+                const minPr = Math.min(...premiums), maxPr = Math.max(...premiums);
+                const key = apt.id + '-' + type.name;
+                const isExp = state.expandedTypes[key];
+                return `<tr>
+                  <td><span class="fw700">${type.name}</span> <span style="font-size:12px;color:var(--muted-fg)">${type.areaM2}㎡ · ${type.areaPy}평</span></td>
+                  <td class="td-r"><span class="badge badge-gold" style="font-size:12px;padding:3px 8px">${type.listings.length}건</span></td>
+                  <td class="td-r fw700 c-green" style="font-size:14px">${formatPrice(minP)}</td>
+                  <td class="td-r fw700 c-red" style="font-size:14px">${formatPrice(maxP)}</td>
+                  <td class="td-r" style="font-size:14px">${premiumHtml(minPr)} ~ ${premiumHtml(maxPr)}</td>
+                  <td class="td-r"><button class="detail-btn" onclick="toggleDetail('${key}')">상세 ${isExp ? '▲' : '▼'}</button></td>
+                </tr>
+                <tr class="detail-row ${isExp ? 'open' : ''}" id="detail-${key}">
+                  <td colspan="6" style="padding:0">
+                    <div class="detail-inner">
+                      <table>
+                        <thead><tr><th>층수</th><th>면적</th><th class="r">가격</th><th class="r">프리미엄</th><th>날짜</th><th>비고</th></tr></thead>
+                        <tbody>
+                          ${type.listings.map(l => `<tr>
+                            <td class="fw700">${l.floor}</td>
+                            <td>${l.area}</td>
+                            <td class="r fw700" style="font-variant-numeric:tabular-nums">${formatPrice(l.price)}</td>
+                            <td class="r ${l.premium >= 0 ? 'c-green' : 'c-red'} fw700" style="font-variant-numeric:tabular-nums">${l.premium >= 0 ? '+' : ''}${formatPrice(l.premium)}</td>
+                            <td style="color:var(--muted-fg)">${l.date}</td>
+                            <td style="color:var(--muted-fg)">${l.note || '-'}</td>
+                          </tr>`).join('')}
+                        </tbody>
+                      </table>
+                    </div>
+                  </td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>`;
+    });
+  }
+
+  document.getElementById('app').innerHTML = html;
+}
+
+// ==================== ACTIONS ====================
+function setState(key, val) { state[key] = val; render(); }
+function resetFilters() { state.region = ''; state.subRegion = ''; state.search = ''; showToast('새로고침 완료!'); render(); }
+function toggleFavOnly() { state.showFavOnly = !state.showFavOnly; render(); }
+function toggleFavorite(id) {
+  if (state.favorites.has(id)) { state.favorites.delete(id); showToast('즐겨찾기에서 제거되었습니다'); }
+  else { state.favorites.add(id); showToast('즐겨찾기에 추가되었습니다 ❤️'); }
+  render();
+}
+function toggleCompare(id) {
+  if (state.comparing.has(id)) { state.comparing.delete(id); }
+  else {
+    if (state.comparing.size >= 3) { showToast('최대 3개까지 비교할 수 있습니다'); return; }
+    state.comparing.add(id); showToast('비교 목록에 추가되었습니다 📊');
+  }
+  render();
+}
+function clearCompare() { state.comparing.clear(); render(); }
+function toggleDetail(key) { state.expandedTypes[key] = !state.expandedTypes[key]; render(); }
+
+// Initial render
+render();
+</script>
+</body>
+</html>
