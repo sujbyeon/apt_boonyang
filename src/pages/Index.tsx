@@ -24,6 +24,8 @@ const Index = () => {
   });
   const [comparing, setComparing] = useState<Set<string>>(new Set());
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 0]);
+  const [priceRangeInitialized, setPriceRangeInitialized] = useState(false);
 
   const regions = useMemo(() => [...new Set(apartments.map((a) => a.region))], [apartments]);
   const subRegions = useMemo(() => {
