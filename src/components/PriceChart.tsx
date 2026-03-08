@@ -8,11 +8,11 @@ interface PriceChartProps {
 export function PriceChart({ apartments }: PriceChartProps) {
   const chartData = apartments.map((apt) => {
     const price59 = apt.types
-      .filter((t) => t.areaM2 === 59)
-      .flatMap((t) => t.listings.map((l) => l.price));
+      .filter((t) => t.areaM2 >= 55 && t.areaM2 <= 65)
+      .flatMap((t) => t.listings.map((l) => l.price).filter((p) => p > 0));
     const price84 = apt.types
-      .filter((t) => t.areaM2 === 84)
-      .flatMap((t) => t.listings.map((l) => l.price));
+      .filter((t) => t.areaM2 >= 80 && t.areaM2 <= 90)
+      .flatMap((t) => t.listings.map((l) => l.price).filter((p) => p > 0));
 
     return {
       name: apt.name.length > 8 ? apt.name.slice(0, 8) + "…" : apt.name,
@@ -20,7 +20,9 @@ export function PriceChart({ apartments }: PriceChartProps) {
       "59㎡ 최저": price59.length ? Math.min(...price59) : 0,
       "84㎡ 최저": price84.length ? Math.min(...price84) : 0,
     };
-  });
+  }).filter((d) => d["59㎡ 최저"] > 0 || d["84㎡ 최저"] > 0)
+    .sort((a, b) => (a["59㎡ 최저"] || a["84㎡ 최저"]) - (b["59㎡ 최저"] || b["84㎡ 최저"]))
+    .slice(0, 20);
 
   if (chartData.length === 0) return null;
 
