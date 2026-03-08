@@ -191,6 +191,9 @@ const Index = () => {
               onSubRegionChange={setSelectedSubRegion}
               onSearchChange={setSearchQuery}
               onSortChange={setSortBy}
+              priceRange={priceRange}
+              priceBounds={priceBounds}
+              onPriceRangeChange={setPriceRange}
             />
 
             {/* Comparison Panel */}
