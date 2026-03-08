@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { RefreshCw, Heart, Loader2 } from "lucide-react";
 import { formatPrice, getMinPrice, getMaxPrice, getTotalListings } from "@/data/mockApartments";
 import { useSheetData } from "@/hooks/useSheetData";
