@@ -8,6 +8,7 @@ import { ApartmentCard } from "@/components/ApartmentCard";
 import { PriceChart } from "@/components/PriceChart";
 import { ComparisonPanel } from "@/components/ComparisonPanel";
 import { AdBanner } from "@/components/AdBanner";
+import { ExportButton } from "@/components/ExportButton";
 import { toast } from "sonner";
 
 const Index = () => {
@@ -121,6 +122,7 @@ const Index = () => {
               <Heart className="w-3.5 h-3.5" fill={showFavoritesOnly ? "currentColor" : "none"} />
               즐겨찾기 {favorites.size > 0 && `(${favorites.size})`}
             </button>
+            <ExportButton apartments={filtered} />
           </div>
         </header>
 
